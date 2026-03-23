@@ -1,2 +1,2 @@
-textdb/dist/
-textdb/node_modules/
+node_modules/
+dist/
