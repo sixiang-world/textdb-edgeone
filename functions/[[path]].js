@@ -118,6 +118,10 @@ export async function onHttpRequest(request) {
       return jsonResponse({ status: 1, data: { key, action: "deleted" }, req_id: generateId() });
     }
 
+    if (value.length > 200000) {
+      return jsonResponse({ status: 0, error: "value 不能超过 20 万字符", data: null }, 400);
+    }
+
     await TEXTDB.put(key, value);
     return jsonResponse({ status: 1, data: { key, url: `${url.origin}/${key}` }, req_id: generateId() });
   }
