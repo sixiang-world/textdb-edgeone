@@ -4,192 +4,519 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TextDB EdgeOne - 在线文本数据库</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
   <style>
+    :root {
+      --bg: #0a0e17;
+      --card: #131a2b;
+      --border: #1e2a3f;
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --primary: #3b82f6;
+      --primary-light: #60a5fa;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --code-bg: #0d1117;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
-    h1 { font-size: 2rem; text-align: center; margin-bottom: 0.5rem; background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 2rem; }
-    .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
-    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #38bdf8; }
-    label { display: block; font-size: 0.875rem; color: #94a3b8; margin-bottom: 0.25rem; }
-    input, textarea { width: 100%; padding: 0.625rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.9rem; }
-    input:focus, textarea:focus { outline: none; border-color: #38bdf8; }
-    textarea { min-height: 120px; resize: vertical; font-family: "Fira Code", monospace; }
-    .row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
-    .row > * { flex: 1; }
-    button { padding: 0.625rem 1.25rem; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-    .btn-primary { background: #38bdf8; color: #0f172a; }
-    .btn-primary:hover { background: #7dd3fc; }
-    .btn-danger { background: #ef4444; color: white; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      background: linear-gradient(180deg, #111827 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .header .logo { font-size: 3rem; margin-bottom: 0.5rem; }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p { color: var(--text-dim); margin-top: 0.5rem; font-size: 0.95rem; }
+    .header .badges { margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.25rem 0.75rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 500;
+      background: rgba(59,130,246,0.1); color: var(--primary-light);
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* Nav Tabs */
+    .tabs {
+      display: flex; gap: 0; max-width: 900px; margin: 0 auto;
+      border-bottom: 1px solid var(--border);
+      padding: 0 1rem;
+    }
+    .tab {
+      padding: 0.75rem 1.25rem; cursor: pointer;
+      color: var(--text-dim); font-size: 0.9rem; font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
+
+    /* Main */
+    .main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1rem; font-weight: 600; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    /* Form */
+    label {
+      display: block; font-size: 0.8rem; color: var(--text-dim);
+      margin-bottom: 0.25rem; font-weight: 500;
+    }
+    input, textarea, select {
+      width: 100%; padding: 0.6rem 0.8rem;
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+    textarea { min-height: 150px; resize: vertical; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.85rem; line-height: 1.5; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      padding: 0.5rem 1rem; border: none; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 500; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-danger { background: var(--danger); color: white; }
     .btn-danger:hover { background: #f87171; }
-    .btn-secondary { background: #334155; color: #e2e8f0; }
-    .btn-secondary:hover { background: #475569; }
-    .result { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-family: "Fira Code", monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
-    .result.success { border-color: #22c55e; }
-    .result.error { border-color: #ef4444; }
-    .tip { background: #1e293b; border-left: 3px solid #38bdf8; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: #94a3b8; }
-    .api-section code { background: #334155; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.8rem; }
-    .api-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .method { font-size: 0.75rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 4px; }
-    .method.get { background: #22c55e; color: #0f172a; }
-    .method.post { background: #3b82f6; color: white; }
-    .method.delete { background: #ef4444; color: white; }
-    footer { text-align: center; color: #475569; font-size: 0.8rem; margin-top: 2rem; }
+    .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+    .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* Row */
+    .row { display: flex; gap: 0.75rem; }
+    .row > * { flex: 1; }
+
+    /* Result */
+    .result {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem; margin-top: 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem; white-space: pre-wrap; word-break: break-all;
+      max-height: 300px; overflow-y: auto;
+      animation: fadeIn 0.3s ease;
+    }
+    .result.success { border-color: var(--success); }
+    .result.error { border-color: var(--danger); }
+
+    /* API Docs */
+    .api-method { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .method-badge {
+      font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 4px; min-width: 50px; text-align: center;
+    }
+    .method-get { background: var(--success); color: #0a0e17; }
+    .method-post { background: var(--primary); color: white; }
+    .method-delete { background: var(--danger); color: white; }
+    .api-path { font-family: monospace; font-size: 0.85rem; }
+    .api-desc { color: var(--text-dim); font-size: 0.85rem; margin-left: 0.5rem; }
+
+    /* Param Table */
+    .param-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.75rem; }
+    .param-table th { text-align: left; color: var(--text-dim); padding: 0.5rem; border-bottom: 1px solid var(--border); font-weight: 500; }
+    .param-table td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+    .param-table code { background: rgba(59,130,246,0.1); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem; color: var(--primary-light); }
+    .required { color: var(--danger); font-size: 0.7rem; font-weight: 600; }
+
+    /* Code block */
+    .code-block {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem; margin-top: 0.75rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem; line-height: 1.6; overflow-x: auto;
+      position: relative;
+    }
+    .code-block .copy-btn {
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      background: var(--border); border: none; color: var(--text-dim);
+      padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;
+      font-size: 0.7rem;
+    }
+    .code-block .copy-btn:hover { color: var(--text); }
+
+    /* History */
+    .history-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.2s;
+    }
+    .history-item:hover { background: rgba(59,130,246,0.05); }
+    .history-key {
+      font-family: monospace; font-size: 0.85rem; font-weight: 500;
+      color: var(--primary-light); flex: 1;
+    }
+    .history-time { color: var(--text-dim); font-size: 0.75rem; }
+    .history-empty { text-align: center; color: var(--text-dim); padding: 2rem; font-size: 0.9rem; }
+
+    /* Footer */
+    footer {
+      text-align: center; color: var(--text-dim); font-size: 0.8rem;
+      padding: 2rem 1rem; border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    footer a { color: var(--primary-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--card); border: 1px solid var(--success);
+      border-radius: 8px; padding: 0.75rem 1rem;
+      font-size: 0.85rem; color: var(--success);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s ease;
+      z-index: 100;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.5rem; }
+      .row { flex-direction: column; }
+      .tabs { overflow-x: auto; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📦 TextDB EdgeOne</h1>
-    <p class="subtitle">基于腾讯云 EdgeOne Pages + KV 的在线文本数据库</p>
 
-    <!-- 写入 -->
+<div class="header">
+  <div class="logo">📦</div>
+  <h1>TextDB EdgeOne</h1>
+  <p>基于腾讯云 EdgeOne Pages + KV 的在线文本数据库</p>
+  <div class="badges">
+    <span class="badge">⚡ EdgeOne Pages</span>
+    <span class="badge">💾 KV 存储</span>
+    <span class="badge">🌍 全球加速</span>
+    <span class="badge">🆓 免费</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-panel="operate">✏️ 操作</div>
+  <div class="tab" data-panel="history">📋 历史</div>
+  <div class="tab" data-panel="api">📡 API 文档</div>
+</div>
+
+<div class="main">
+  <!-- 操作面板 -->
+  <div class="panel active" id="panel-operate">
     <div class="card">
-      <h2>✏️ 写入 / 更新</h2>
-      <label>Key（6-60 位，仅支持 0-9a-zA-Z-_）</label>
-      <div class="row">
-        <input type="text" id="writeKey" placeholder="my-data-key-123">
-        <button class="btn-secondary" onclick="generateKey()">🎲 随机生成</button>
+      <div class="card-title">✏️ 写入数据</div>
+      <label>Key <span style="color:var(--danger)">*</span>（6-60 位，仅支持 0-9a-zA-Z-_）</label>
+      <div class="row" style="margin-bottom: 0.75rem">
+        <input type="text" id="writeKey" placeholder="my-data-key" autocomplete="off">
+        <button class="btn btn-ghost" onclick="generateKey()" style="white-space:nowrap">🎲 随机</button>
       </div>
-      <label>Value（文本数据，最大 20 万字符）</label>
+      <label>Value <span style="color:var(--danger)">*</span>（最大 20 万字符）</label>
       <textarea id="writeValue" placeholder="在此输入文本内容..."></textarea>
-      <div class="row" style="margin-top: 0.75rem; margin-bottom: 0;">
-        <button class="btn-primary" onclick="writeData()">📝 写入</button>
-        <button class="btn-danger" onclick="deleteData()">🗑️ 删除此 Key</button>
+      <div class="btn-group" style="margin-top: 0.75rem">
+        <button class="btn btn-primary" onclick="writeData()">📝 写入</button>
+        <button class="btn btn-danger" onclick="deleteData()">🗑️ 删除</button>
       </div>
       <div id="writeResult" class="result" style="display:none"></div>
     </div>
 
-    <!-- 读取 -->
     <div class="card">
-      <h2>📖 读取</h2>
-      <label>输入 Key 读取数据</label>
+      <div class="card-title">📖 读取数据</div>
       <div class="row">
-        <input type="text" id="readKey" placeholder="my-data-key-123">
-        <button class="btn-primary" onclick="readData()">📖 读取</button>
+        <input type="text" id="readKey" placeholder="输入 Key 读取数据" autocomplete="off">
+        <button class="btn btn-primary" onclick="readData()" style="white-space:nowrap">📖 读取</button>
       </div>
       <div id="readResult" class="result" style="display:none"></div>
     </div>
-
-    <!-- API 文档 -->
-    <div class="card api-section">
-      <h2>📡 API 文档</h2>
-      <div class="tip">基础 URL：<code id="baseUrl"></code></div>
-
-      <div class="api-row">
-        <span class="method post">POST</span>
-        <code>/update/</code>
-        <span style="color:#94a3b8">— 创建/更新/删除</span>
-      </div>
-      <div class="api-row">
-        <span class="method get">GET</span>
-        <code>/&#123;key&#125;</code>
-        <span style="color:#94a3b8">— 读取文本数据</span>
-      </div>
-      <div class="api-row">
-        <span class="method post">POST</span>
-        <code>/&#123;key&#125;</code>
-        <span style="color:#94a3b8">— 直接写入（简写）</span>
-      </div>
-      <div class="api-row">
-        <span class="method delete">DELETE</span>
-        <code>/&#123;key&#125;</code>
-        <span style="color:#94a3b8">— 删除数据</span>
-      </div>
-
-      <label style="margin-top: 1rem">请求示例</label>
-      <div class="result" id="apiExample"></div>
-    </div>
-
-    <footer>TextDB EdgeOne · 基于腾讯云 EdgeOne Pages · MIT-0</footer>
   </div>
 
-  <script>
-    const BASE = location.origin;
-    document.getElementById('baseUrl').textContent = BASE;
+  <!-- 历史面板 -->
+  <div class="panel" id="panel-history">
+    <div class="card">
+      <div class="card-title">📋 操作历史 <span style="color:var(--text-dim);font-size:0.8rem;font-weight:400;margin-left:auto;cursor:pointer" onclick="clearHistory()">清空</span></div>
+      <div id="historyList"></div>
+    </div>
+  </div>
 
-    document.getElementById('apiExample').textContent = `# 写入
+  <!-- API 文档面板 -->
+  <div class="panel" id="panel-api">
+    <div class="card">
+      <div class="card-title">📡 API 接口</div>
+      <div style="margin-bottom:1rem">
+        <div class="api-method">
+          <span class="method-badge method-post">POST</span>
+          <span class="api-path">/update/</span>
+          <span class="api-desc">创建 / 更新 / 删除</span>
+        </div>
+        <div class="api-method">
+          <span class="method-badge method-get">GET</span>
+          <span class="api-path">/{key}</span>
+          <span class="api-desc">读取文本数据</span>
+        </div>
+        <div class="api-method">
+          <span class="method-badge method-post">POST</span>
+          <span class="api-path">/{key}</span>
+          <span class="api-desc">直接写入（简写）</span>
+        </div>
+        <div class="api-method">
+          <span class="method-badge method-delete">DELETE</span>
+          <span class="api-path">/{key}</span>
+          <span class="api-desc">删除数据</span>
+        </div>
+      </div>
+
+      <label>请求参数（POST /update/）</label>
+      <table class="param-table">
+        <tr><th>参数</th><th>必填</th><th>说明</th></tr>
+        <tr><td><code>key</code></td><td><span class="required">必填</span></td><td>文本标识，6-60 位，仅 0-9a-zA-Z-_</td></tr>
+        <tr><td><code>value</code></td><td>—</td><td>文本数据，最大 20 万字符。留空则删除</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 请求示例</div>
+      <label>CURL</label>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">复制</button><span id="curlExample"></span>
+      </div>
+      <label style="margin-top:1rem">Python</label>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">复制</button><span id="pyExample"></span>
+      </div>
+      <label style="margin-top:1rem">JavaScript</label>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">复制</button><span id="jsExample"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ 说明</div>
+      <ul style="font-size:0.85rem;color:var(--text-dim);padding-left:1.25rem;line-height:2">
+        <li>读取不限次数，每个 IP 每日写入/删除操作限 500 次</li>
+        <li>数据无密码保护，建议使用 20 位以上随机 Key</li>
+        <li>1 年未更新的记录会自动删除</li>
+        <li>全程支持 CORS 跨域请求</li>
+        <li>响应 Content-Type 为 text/plain</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  TextDB EdgeOne · 基于 <a href="https://cloud.tencent.com/product/edgeone" target="_blank">腾讯云 EdgeOne Pages</a> · MIT-0 ·
+  <a href="https://github.com/sixiang-world/textdb-edgeone" target="_blank">GitHub</a>
+</footer>
+
+<script>
+const BASE = location.origin;
+const HISTORY_KEY = 'textdb_history';
+
+// Tab 切换
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+// API 示例
+const curlCode = `# 写入
 curl -X POST "${BASE}/update/" \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
   -d "key=mykey&value=hello world"
 
 # 读取
 curl "${BASE}/mykey"
 
-# 简写方式写入
+# 简写方式
 curl -X POST "${BASE}/mykey" \\
   -H "Content-Type: application/json" \\
-  -d '{"data": "hello"}'
+  -d '{"msg": "hello"}'
 
 # 删除
 curl -X DELETE "${BASE}/mykey"`;
 
-    function generateKey() {
-      const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
-      let key = '';
-      for (let i = 0; i < 20; i++) key += chars[Math.floor(Math.random() * chars.length)];
-      document.getElementById('writeKey').value = key;
-    }
+const pyCode = `import requests
 
-    async function writeData() {
-      const key = document.getElementById('writeKey').value.trim();
-      const value = document.getElementById('writeValue').value;
-      const resultEl = document.getElementById('writeResult');
+# 写入
+requests.post("${BASE}/update/", data={
+    "key": "mykey",
+    "value": "hello world"
+})
 
-      if (!key) { showResult(resultEl, '请输入 Key', false); return; }
-      if (!value) { showResult(resultEl, '请输入 Value', false); return; }
+# 读取
+print(requests.get("${BASE}/mykey").text)
 
-      try {
-        const res = await fetch(`${BASE}/update/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
-        });
-        const data = await res.json();
-        showResult(resultEl, JSON.stringify(data, null, 2), data.status === 1);
-      } catch (e) {
-        showResult(resultEl, '请求失败: ' + e.message, false);
-      }
-    }
+# 简写方式
+requests.post("${BASE}/mykey", json={"msg": "hello"})
 
-    async function deleteData() {
-      const key = document.getElementById('writeKey').value.trim();
-      const resultEl = document.getElementById('writeResult');
+# 删除
+requests.delete("${BASE}/mykey")`;
 
-      if (!key) { showResult(resultEl, '请输入要删除的 Key', false); return; }
+const jsCode = `// 写入
+await fetch("${BASE}/update/", {
+  method: "POST",
+  headers: {"Content-Type": "application/x-www-form-urlencoded"},
+  body: "key=mykey&value=hello world"
+});
 
-      try {
-        const res = await fetch(`${BASE}/update/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `key=${encodeURIComponent(key)}&value=`
-        });
-        const data = await res.json();
-        showResult(resultEl, JSON.stringify(data, null, 2), data.status === 1);
-      } catch (e) {
-        showResult(resultEl, '请求失败: ' + e.message, false);
-      }
-    }
+// 读取
+const text = await (await fetch("${BASE}/mykey")).text();
 
-    async function readData() {
-      const key = document.getElementById('readKey').value.trim();
-      const resultEl = document.getElementById('readResult');
+// 简写方式
+await fetch("${BASE}/mykey", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({msg: "hello"})
+});
 
-      if (!key) { showResult(resultEl, '请输入 Key', false); return; }
+// 删除
+await fetch("${BASE}/mykey", {method: "DELETE"});`;
 
-      try {
-        const res = await fetch(`${BASE}/${key}`);
-        const text = await res.text();
-        showResult(resultEl, text || '（空，Key 不存在）', !!text);
-      } catch (e) {
-        showResult(resultEl, '请求失败: ' + e.message, false);
-      }
-    }
+document.getElementById('curlExample').textContent = curlCode;
+document.getElementById('pyExample').textContent = pyCode;
+document.getElementById('jsExample').textContent = jsCode;
 
-    function showResult(el, text, success) {
-      el.textContent = text;
-      el.style.display = 'block';
-      el.className = 'result ' + (success ? 'success' : 'error');
-    }
-  </script>
+// 生成随机 Key
+function generateKey() {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+  let key = '';
+  for (let i = 0; i < 20; i++) key += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('writeKey').value = key;
+}
+
+// 写入
+async function writeData() {
+  const key = document.getElementById('writeKey').value.trim();
+  const value = document.getElementById('writeValue').value;
+  const el = document.getElementById('writeResult');
+  if (!key) return showResult(el, '请输入 Key', false);
+  if (!value) return showResult(el, '请输入 Value', false);
+  try {
+    const res = await fetch(`${BASE}/update/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
+    });
+    const data = await res.json();
+    showResult(el, JSON.stringify(data, null, 2), data.status === 1);
+    if (data.status === 1) { addHistory(key, '写入'); toast('✅ 写入成功'); }
+  } catch (e) { showResult(el, '请求失败: ' + e.message, false); }
+}
+
+// 删除
+async function deleteData() {
+  const key = document.getElementById('writeKey').value.trim();
+  const el = document.getElementById('writeResult');
+  if (!key) return showResult(el, '请输入 Key', false);
+  try {
+    const res = await fetch(`${BASE}/update/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `key=${encodeURIComponent(key)}&value=`
+    });
+    const data = await res.json();
+    showResult(el, JSON.stringify(data, null, 2), data.status === 1);
+    if (data.status === 1) { addHistory(key, '删除'); toast('🗑️ 已删除'); }
+  } catch (e) { showResult(el, '请求失败: ' + e.message, false); }
+}
+
+// 读取
+async function readData() {
+  const key = document.getElementById('readKey').value.trim();
+  const el = document.getElementById('readResult');
+  if (!key) return showResult(el, '请输入 Key', false);
+  try {
+    const res = await fetch(`${BASE}/${key}`);
+    const text = await res.text();
+    showResult(el, text || '（Key 不存在）', !!text);
+    if (text) { addHistory(key, '读取'); }
+  } catch (e) { showResult(el, '请求失败: ' + e.message, false); }
+}
+
+// 结果展示
+function showResult(el, text, success) {
+  el.textContent = text;
+  el.style.display = 'block';
+  el.className = 'result ' + (success ? 'success' : 'error');
+}
+
+// Toast 提示
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// 复制代码
+function copyCode(btn) {
+  const code = btn.parentElement.querySelector('span:last-child').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '已复制';
+    setTimeout(() => btn.textContent = '复制', 1500);
+  });
+}
+
+// 历史记录
+function getHistory() { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 50))); }
+function addHistory(key, action) {
+  const h = getHistory();
+  h.unshift({ key, action, time: Date.now() });
+  saveHistory(h);
+  renderHistory();
+}
+function clearHistory() { localStorage.removeItem(HISTORY_KEY); renderHistory(); }
+function renderHistory() {
+  const h = getHistory();
+  const el = document.getElementById('historyList');
+  if (!h.length) { el.innerHTML = '<div class="history-empty">暂无操作记录</div>'; return; }
+  el.innerHTML = h.map(i => `
+    <div class="history-item" onclick="document.getElementById('readKey').value='${i.key}';document.querySelectorAll('.tab')[0].click();readData();">
+      <span class="history-key">${i.key}</span>
+      <span class="badge">${i.action}</span>
+      <span class="history-time">${timeAgo(i.time)}</span>
+    </div>
+  `).join('');
+}
+function timeAgo(ts) {
+  const d = Math.floor((Date.now() - ts) / 1000);
+  if (d < 60) return '刚刚';
+  if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
+  if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
+  return Math.floor(d / 86400) + ' 天前';
+}
+renderHistory();
+</script>
+
 </body>
 </html>
