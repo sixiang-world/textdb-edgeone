@@ -32,9 +32,11 @@ function isValidKey(key) {
   return /^[0-9a-zA-Z\-_]{6,60}$/.test(key);
 }
 
-export async function onRequest(request) {
+export async function onRequest(context) {
+  const { request, env } = context;
   const url = new URL(request.url);
   const path = url.pathname;
+  const kv = env.TEXTDB;
 
   // CORS preflight
   if (request.method === "OPTIONS") {
@@ -57,7 +59,7 @@ export async function onRequest(request) {
 
     // value 为空字符串表示删除
     if (value === "" || value === undefined || value === null) {
-      await TEXTDB.delete(key);
+      await kv.delete(key);
       return jsonResponse({
         status: 1,
         data: { key, url: `${url.origin}/${key}`, action: "deleted" },
@@ -69,7 +71,7 @@ export async function onRequest(request) {
       return jsonResponse({ status: 0, error: "value 不能为空且不能超过 20 万字符", data: null }, 400);
     }
 
-    await TEXTDB.put(key, value);
+    await kv.put(key, value);
     return jsonResponse({
       status: 1,
       data: { key, url: `${url.origin}/${key}` },
@@ -79,15 +81,14 @@ export async function onRequest(request) {
 
   // GET /{key} - 读取
   if (request.method === "GET") {
-    const key = path.slice(1); // 去掉开头的 /
+    const key = path.slice(1);
     if (!key) {
-      // 首页
       return fetch(new URL("./index.html", import.meta.url));
     }
     if (!isValidKey(key)) {
       return new Response("", { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "text/plain; charset=utf-8" } });
     }
-    const value = await TEXTDB.get(key);
+    const value = await kv.get(key);
     if (value === null) {
       return new Response("", { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "text/plain; charset=utf-8" } });
     }
@@ -114,7 +115,7 @@ export async function onRequest(request) {
     }
 
     if (!value) {
-      await TEXTDB.delete(key);
+      await kv.delete(key);
       return jsonResponse({ status: 1, data: { key, action: "deleted" }, req_id: generateId() });
     }
 
@@ -122,7 +123,7 @@ export async function onRequest(request) {
       return jsonResponse({ status: 0, error: "value 不能超过 20 万字符", data: null }, 400);
     }
 
-    await TEXTDB.put(key, value);
+    await kv.put(key, value);
     return jsonResponse({ status: 1, data: { key, url: `${url.origin}/${key}` }, req_id: generateId() });
   }
 
@@ -132,7 +133,7 @@ export async function onRequest(request) {
     if (!isValidKey(key)) {
       return jsonResponse({ status: 0, error: "key 格式错误", data: null }, 400);
     }
-    await TEXTDB.delete(key);
+    await kv.delete(key);
     return jsonResponse({ status: 1, data: { key, action: "deleted" }, req_id: generateId() });
   }
 
