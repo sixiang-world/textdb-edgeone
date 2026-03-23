@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TextDB EdgeOne - 在线文本数据库</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+    h1 { font-size: 2rem; text-align: center; margin-bottom: 0.5rem; background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 2rem; }
+    .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #38bdf8; }
+    label { display: block; font-size: 0.875rem; color: #94a3b8; margin-bottom: 0.25rem; }
+    input, textarea { width: 100%; padding: 0.625rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.9rem; }
+    input:focus, textarea:focus { outline: none; border-color: #38bdf8; }
+    textarea { min-height: 120px; resize: vertical; font-family: "Fira Code", monospace; }
+    .row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .row > * { flex: 1; }
+    button { padding: 0.625rem 1.25rem; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+    .btn-primary { background: #38bdf8; color: #0f172a; }
+    .btn-primary:hover { background: #7dd3fc; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #f87171; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-secondary:hover { background: #475569; }
+    .result { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-family: "Fira Code", monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
+    .result.success { border-color: #22c55e; }
+    .result.error { border-color: #ef4444; }
+    .tip { background: #1e293b; border-left: 3px solid #38bdf8; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: #94a3b8; }
+    .api-section code { background: #334155; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.8rem; }
+    .api-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .method { font-size: 0.75rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 4px; }
+    .method.get { background: #22c55e; color: #0f172a; }
+    .method.post { background: #3b82f6; color: white; }
+    .method.delete { background: #ef4444; color: white; }
+    footer { text-align: center; color: #475569; font-size: 0.8rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 TextDB EdgeOne</h1>
+    <p class="subtitle">基于腾讯云 EdgeOne Pages + KV 的在线文本数据库</p>
+
+    <!-- 写入 -->
+    <div class="card">
+      <h2>✏️ 写入 / 更新</h2>
+      <label>Key（6-60 位，仅支持 0-9a-zA-Z-_）</label>
+      <div class="row">
+        <input type="text" id="writeKey" placeholder="my-data-key-123">
+        <button class="btn-secondary" onclick="generateKey()">🎲 随机生成</button>
+      </div>
+      <label>Value（文本数据，最大 20 万字符）</label>
+      <textarea id="writeValue" placeholder="在此输入文本内容..."></textarea>
+      <div class="row" style="margin-top: 0.75rem; margin-bottom: 0;">
+        <button class="btn-primary" onclick="writeData()">📝 写入</button>
+        <button class="btn-danger" onclick="deleteData()">🗑️ 删除此 Key</button>
+      </div>
+      <div id="writeResult" class="result" style="display:none"></div>
+    </div>
+
+    <!-- 读取 -->
+    <div class="card">
+      <h2>📖 读取</h2>
+      <label>输入 Key 读取数据</label>
+      <div class="row">
+        <input type="text" id="readKey" placeholder="my-data-key-123">
+        <button class="btn-primary" onclick="readData()">📖 读取</button>
+      </div>
+      <div id="readResult" class="result" style="display:none"></div>
+    </div>
+
+    <!-- API 文档 -->
+    <div class="card api-section">
+      <h2>📡 API 文档</h2>
+      <div class="tip">基础 URL：<code id="baseUrl"></code></div>
+
+      <div class="api-row">
+        <span class="method post">POST</span>
+        <code>/update/</code>
+        <span style="color:#94a3b8">— 创建/更新/删除</span>
+      </div>
+      <div class="api-row">
+        <span class="method get">GET</span>
+        <code>/&#123;key&#125;</code>
+        <span style="color:#94a3b8">— 读取文本数据</span>
+      </div>
+      <div class="api-row">
+        <span class="method post">POST</span>
+        <code>/&#123;key&#125;</code>
+        <span style="color:#94a3b8">— 直接写入（简写）</span>
+      </div>
+      <div class="api-row">
+        <span class="method delete">DELETE</span>
+        <code>/&#123;key&#125;</code>
+        <span style="color:#94a3b8">— 删除数据</span>
+      </div>
+
+      <label style="margin-top: 1rem">请求示例</label>
+      <div class="result" id="apiExample"></div>
+    </div>
+
+    <footer>TextDB EdgeOne · 基于腾讯云 EdgeOne Pages · MIT-0</footer>
+  </div>
+
+  <script>
+    const BASE = location.origin;
+    document.getElementById('baseUrl').textContent = BASE;
+
+    document.getElementById('apiExample').textContent = `# 写入
+curl -X POST "${BASE}/update/" \\
+  -d "key=mykey&value=hello world"
+
+# 读取
+curl "${BASE}/mykey"
+
+# 简写方式写入
+curl -X POST "${BASE}/mykey" \\
+  -H "Content-Type: application/json" \\
+  -d '{"data": "hello"}'
+
+# 删除
+curl -X DELETE "${BASE}/mykey"`;
+
+    function generateKey() {
+      const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+      let key = '';
+      for (let i = 0; i < 20; i++) key += chars[Math.floor(Math.random() * chars.length)];
+      document.getElementById('writeKey').value = key;
+    }
+
+    async function writeData() {
+      const key = document.getElementById('writeKey').value.trim();
+      const value = document.getElementById('writeValue').value;
+      const resultEl = document.getElementById('writeResult');
+
+      if (!key) { showResult(resultEl, '请输入 Key', false); return; }
+      if (!value) { showResult(resultEl, '请输入 Value', false); return; }
+
+      try {
+        const res = await fetch(`${BASE}/update/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
+        });
+        const data = await res.json();
+        showResult(resultEl, JSON.stringify(data, null, 2), data.status === 1);
+      } catch (e) {
+        showResult(resultEl, '请求失败: ' + e.message, false);
+      }
+    }
+
+    async function deleteData() {
+      const key = document.getElementById('writeKey').value.trim();
+      const resultEl = document.getElementById('writeResult');
+
+      if (!key) { showResult(resultEl, '请输入要删除的 Key', false); return; }
+
+      try {
+        const res = await fetch(`${BASE}/update/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `key=${encodeURIComponent(key)}&value=`
+        });
+        const data = await res.json();
+        showResult(resultEl, JSON.stringify(data, null, 2), data.status === 1);
+      } catch (e) {
+        showResult(resultEl, '请求失败: ' + e.message, false);
+      }
+    }
+
+    async function readData() {
+      const key = document.getElementById('readKey').value.trim();
+      const resultEl = document.getElementById('readResult');
+
+      if (!key) { showResult(resultEl, '请输入 Key', false); return; }
+
+      try {
+        const res = await fetch(`${BASE}/${key}`);
+        const text = await res.text();
+        showResult(resultEl, text || '（空，Key 不存在）', !!text);
+      } catch (e) {
+        showResult(resultEl, '请求失败: ' + e.message, false);
+      }
+    }
+
+    function showResult(el, text, success) {
+      el.textContent = text;
+      el.style.display = 'block';
+      el.className = 'result ' + (success ? 'success' : 'error');
+    }
+  </script>
+</body>
+</html>
