@@ -268,29 +268,8 @@ const INDEX_HTML = `<!DOCTYPE html>
 
 <script>
 const B = location.origin;
-
-// Code examples
-document.getElementById('curlCode').textContent = \`# 写入
-curl -X POST "\${B}/update/" \\
-  -d "key=mykey&value=hello world"
-
-# 读取
-curl "\${B}/mykey"
-
-# 删除
-curl -X DELETE "\${B}/mykey"\`;
-
-document.getElementById('pyCode').textContent = \`import requests
-
-# 写入
-requests.post("\${B}/update/",
-  data={"key": "mykey", "value": "hello world"})
-
-# 读取
-print(requests.get("\${B}/mykey").text)
-
-# 删除
-requests.delete("\${B}/mykey")\`;
+document.getElementById('curlCode').textContent = '# 写入\ncurl -X POST "' + B + '/update/" \\\n  -d "key=mykey&value=hello world"\n\n# 读取\ncurl "' + B + '/mykey"\n\n# 删除\ncurl -X DELETE "' + B + '/mykey"';
+document.getElementById('pyCode').textContent = 'import requests\n\n# 写入\nrequests.post("' + B + '/update/",\n  data={"key": "mykey", "value": "hello world"})\n\n# 读取\nprint(requests.get("' + B + '/mykey").text)\n\n# 删除\nrequests.delete("' + B + '/mykey")';
 
 function genKey() {
   const c = 'abcdefghijklmnopqrstuvwxyz0123456789';
