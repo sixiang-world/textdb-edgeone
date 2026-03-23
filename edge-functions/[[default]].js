@@ -44,11 +44,11 @@ export default function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const path = url.pathname;
-  const kv = env.TEXTDB;
+  const kv = TEXTDB;
 
   try {
     if (!kv) {
-      return jsonResponse({ status: 0, error: "KV 未绑定：请在 EdgeOne 控制台绑定 TEXTDB 命名空间", env_keys: Object.keys(env || {}) }, 500);
+      return jsonResponse({ status: 0, error: "KV 未绑定：请在 EdgeOne 控制台绑定 TEXTDB 命名空间" }, 500);
     }
 
     if (request.method === "OPTIONS") {
