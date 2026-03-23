@@ -26,7 +26,7 @@ async function getParams(request) {
 }
 
 function isValidKey(key) {
-  return /^[0-9a-zA-Z\-_]{6,60}$/.test(key);
+  return /^[0-9a-zA-Z_]{1,512}$/.test(key);
 }
 
 function jsonResponse(data, status = 200) {
@@ -64,7 +64,7 @@ export default function onRequest(context) {
         const key = (params.key || "").trim();
         const value = params.value;
         if (!isValidKey(key)) {
-          return jsonResponse({ status: 0, error: "key 格式错误：6-60 位，仅支持 0-9a-zA-Z-_-" }, 400);
+          return jsonResponse({ status: 0, error: "key 格式错误：仅支持数字、字母、下划线，最长 512 字符" }, 400);
         }
         if (value === "" || value === undefined || value === null) {
           await kv.delete(key);
