@@ -32,7 +32,7 @@ function isValidKey(key) {
   return /^[0-9a-zA-Z\-_]{6,60}$/.test(key);
 }
 
-export async function onHttpRequest(request) {
+export async function onRequest(request) {
   const url = new URL(request.url);
   const path = url.pathname;
 
