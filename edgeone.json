@@ -1,4 +1,4 @@
 {
-  "outputDirectory": ".",
+  "outputDirectory": "textdb/dist",
   "nodeVersion": "22"
 }
