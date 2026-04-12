@@ -54,7 +54,18 @@ async function handleApi(context) {
   const {request} = context;
   const url = new URL(request.url);
   const path = url.pathname;
-  const kv = TEXTDB;
+  
+  // 安全获取 KV 实例
+  let kv = null;
+  try {
+    kv = TEXTDB;
+  } catch (e) {
+    return new Response(JSON.stringify({
+      status: 0, 
+      error: "KV 命名空间 'TEXTDB' 未绑定。请在 EdgeOne Pages 逻辑设置中绑定 KV 实例，变量名设为 TEXTDB。",
+      tip: "进入 EdgeOne 控制台 -> Pages -> 你的项目 -> 边缘函数设置 -> KV 绑定"
+    }), {status: 500, headers: {...CORS, "Content-Type": "application/json"}});
+  }
 
   if (request.method === "OPTIONS") return new Response(null, {status:204, headers:CORS});
 
