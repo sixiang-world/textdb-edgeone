@@ -79,6 +79,7 @@ export async function onRequest(context) {
   // KV 测试路由
   if (path === '/test-kv' || path === '/test-kv/') {
     try {
+      const { env } = context;
       const kv = (env && env.TEXTDB) || (typeof TEXTDB !== 'undefined' ? TEXTDB : null);
       if (!kv) return new Response(JSON.stringify({status:0, error:'TEXTDB not found'}), {headers:{'Content-Type':'application/json'}});
       const val = await kv.get('test_key');
