@@ -123,20 +123,24 @@ async function handleApi(context) {
 }
 
 export default function onRequest(context) {
-  const url = new URL(context.request.url);
-  const path = url.pathname;
+  try {
+    const url = new URL(context.request.url);
+    const path = url.pathname;
 
-  // Static files
-  if (path === "/" || path === "/index.html") {
-    const html = STATIC_FILES["/index.html"];
-    if (html) return new Response(html, {headers:{"Content-Type":"text/html; charset=utf-8",...CORS}});
-  }
-  if (STATIC_FILES[path]) {
-    return new Response(STATIC_FILES[path], {headers:{"Content-Type":getMimeType(path),...CORS}});
-  }
+    // Static files
+    if (path === "/" || path === "/index.html") {
+      const html = STATIC_FILES["/index.html"];
+      if (html) return new Response(html, {headers:{"Content-Type":"text/html; charset=utf-8",...CORS}});
+    }
+    if (STATIC_FILES[path]) {
+      return new Response(STATIC_FILES[path], {headers:{"Content-Type":getMimeType(path),...CORS}});
+    }
 
-  // API routes
-  return handleApi(context);
+    // API routes
+    return handleApi(context);
+  } catch(e) {
+    return new Response(JSON.stringify({status:0, error:e.message, stack:e.stack, name:e.name}), {status:500, headers:{...CORS,"Content-Type":"application/json"}});
+  }
 }
 `;
 
