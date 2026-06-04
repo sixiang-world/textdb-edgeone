@@ -61,7 +61,18 @@ export function FolderUpload() {
         }
       };
       reader.onload = (ev) => {
-        const content = ev.target?.result as string;
+        const result = ev.target?.result;
+        if (typeof result !== "string") {
+          skipped.push(relPath);
+          if (items.length + skipped.length === fileList.length) {
+            if (skipped.length > 0) {
+              toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
+            }
+            setFiles(prev => [...prev, ...items]);
+          }
+          return;
+        }
+        const content = result;
 
         if (isBinary(content)) {
           skipped.push(relPath);
@@ -95,9 +106,15 @@ export function FolderUpload() {
     setResults([]);
     setEntryUrl("");
 
+    // Recompute keys based on current prefix (may have changed since selection)
+    const toUpload: UploadItem[] = files.map(f => ({
+      ...f,
+      key: pathToKey(prefix, f.relativePath),
+    }));
+
     // Build file map & rewrite HTML refs
-    const fileMap = buildFileMap(prefix, files);
-    const toUpload: UploadItem[] = files.map(f => {
+    const fileMap = buildFileMap(prefix, toUpload);
+    const rewritten: UploadItem[] = toUpload.map(f => {
       if (f.name.endsWith(".html") || f.name.endsWith(".htm")) {
         return {
           ...f,
@@ -109,10 +126,10 @@ export function FolderUpload() {
 
     // Upload one-by-one (respect rate limits, track progress)
     const allResults: UploadResult[] = [];
-    for (let i = 0; i < toUpload.length; i++) {
-      const res = await uploadFile(toUpload[i]);
+    for (let i = 0; i < rewritten.length; i++) {
+      const res = await uploadFile(rewritten[i]);
       allResults.push(res);
-      setProgress({ done: i + 1, total: toUpload.length });
+      setProgress({ done: i + 1, total: rewritten.length });
     }
 
     setResults(allResults);
@@ -123,7 +140,7 @@ export function FolderUpload() {
     toast.success(`上传完成: ${succeeded} 成功${failed > 0 ? `, ${failed} 失败` : ""}`);
 
     // Find entry point (index.html)
-    const entry = toUpload.find(
+    const entry = rewritten.find(
       f => f.relativePath.endsWith("/index.html") || f.relativePath === "index.html"
     );
     if (entry) {
@@ -191,7 +208,7 @@ export function FolderUpload() {
         {files.length > 0 && (
           <div className="rounded-md border bg-muted p-3 text-sm font-mono max-h-48 overflow-auto">
             {files.map((f, i) => (
-              <div key={i} className="flex items-center justify-between py-1">
+              <div key={f.relativePath} className="flex items-center justify-between py-1">
                 <span className="text-muted-foreground truncate flex-1">
                   📄 {f.relativePath}
                 </span>
