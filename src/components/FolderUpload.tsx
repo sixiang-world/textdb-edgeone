@@ -19,6 +19,7 @@ const BASE = location.origin;
 export function FolderUpload() {
   const [prefix, setPrefix] = useState("");
   const [files, setFiles] = useState<UploadItem[]>([]);
+  const [reading, setReading] = useState(false);      // loading indicator while FileReader is working
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState<UploadResult[]>([]);
@@ -38,11 +39,18 @@ export function FolderUpload() {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
+    // Reset previous upload state
+    setResults([]);
+    setEntryUrl("");
+    setFiles([]);           // replace, not append
+    setReading(true);       // show loading indicator
+
     // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
     const effectivePrefix = prefix || genPrefix();
 
     const items: UploadItem[] = [];
     const skipped: string[] = [];
+    let processed = 0;
 
     for (let i = 0; i < fileList.length; i++) {
       const f = fileList[i];
@@ -53,45 +61,41 @@ export function FolderUpload() {
       const reader = new FileReader();
       reader.onerror = () => {
         skipped.push(relPath);
-        // Check completion even on error (onload won't run for this file)
-        if (items.length + skipped.length === fileList.length) {
+        processed++;
+        // Check completion
+        if (processed === fileList.length) {
           if (skipped.length > 0) {
             toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
           }
-          setFiles(prev => [...prev, ...items]);
+          setFiles(items);
+          setReading(false);
         }
       };
       reader.onload = (ev) => {
         const result = ev.target?.result;
         if (typeof result !== "string") {
           skipped.push(relPath);
-          if (items.length + skipped.length === fileList.length) {
-            if (skipped.length > 0) {
-              toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
-            }
-            setFiles(prev => [...prev, ...items]);
-          }
-          return;
-        }
-        const content = result;
-
-        if (isBinary(content)) {
-          skipped.push(relPath);
         } else {
-          items.push({
-            relativePath: relPath,
-            name: f.name,
-            content,
-            key: pathToKey(effectivePrefix, relPath),
-          });
+          const content = result;
+          if (isBinary(content)) {
+            skipped.push(relPath);
+          } else {
+            items.push({
+              relativePath: relPath,
+              name: f.name,
+              content,
+              key: pathToKey(effectivePrefix, relPath),
+            });
+          }
         }
+        processed++;
 
-        // When all files processed, update state
-        if (items.length + skipped.length === fileList.length) {
+        if (processed === fileList.length) {
           if (skipped.length > 0) {
             toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
           }
-          setFiles(prev => [...prev, ...items]);
+          setFiles(items);
+          setReading(false);
         }
       };
       reader.readAsText(f);
@@ -206,6 +210,12 @@ export function FolderUpload() {
         </div>
 
         {/* File list preview — collapsed summary bar by default */}
+        {reading && (
+          <div className="rounded-md border bg-muted p-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" />
+            正在读取文件...
+          </div>
+        )}
         {files.length > 0 && (
           <div className="rounded-md border bg-muted p-3 text-sm">
             {/* Summary bar */}
