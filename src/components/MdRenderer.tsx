@@ -15,21 +15,25 @@ export function MdRenderer() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let aborted = false;
     (async () => {
       setLoading(true);
       try {
         const text = await readData(key);
+        if (aborted) return;
         if (!text) {
           setError("Key 不存在或内容为空");
         } else {
           setMarkdown(text);
         }
       } catch (e: any) {
+        if (aborted) return;
         setError("加载失败: " + e.message);
       } finally {
-        setLoading(false);
+        if (!aborted) setLoading(false);
       }
     })();
+    return () => { aborted = true; };
   }, [key]);
 
   async function copyUrl() {
