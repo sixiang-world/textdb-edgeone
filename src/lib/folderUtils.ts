@@ -61,13 +61,13 @@ function isAbsoluteUrl(url: string): boolean {
 function resolveRelative(
   url: string,
   fileMap: Map<string, string>,
-  prefix: string
+  _prefix: string
 ): string | null {
   const normalized = url.replace(/^\.{1,2}\//, "");
   const key = fileMap.get(normalized);
   if (key) return key;
-  // Fallback: compute from prefix via pathToKey
-  return pathToKey(prefix, normalized);
+  // Not in map — file wasn't uploaded (binary, etc.), leave reference unchanged
+  return null;
 }
 
 /**
