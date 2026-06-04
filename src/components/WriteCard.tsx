@@ -14,12 +14,37 @@ import { toast } from "sonner";
 
 const BASE = location.origin;
 
+const TEXT_ACCEPT = [
+  ".txt", ".log", ".csv", ".tsv",
+  ".html", ".htm", ".css", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".scss", ".sass", ".less",
+  ".json", ".xml", ".svg", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf", ".env", ".properties",
+  ".md", ".mdx", ".rst", ".tex",
+  ".sh", ".bash", ".zsh", ".py", ".rb", ".php", ".pl", ".lua",
+  ".c", ".cpp", ".h", ".hpp", ".rs", ".go", ".java", ".kt", ".swift", ".sql",
+  ".graphql", ".gradle", ".proto", ".Dockerfile", ".editorconfig",
+].join(",");
+
+/** Heuristic: does the value look like HTML? */
+function looksLikeHtml(value: string): boolean {
+  const s = value.trimStart();
+  return (
+    s.startsWith("<!") ||
+    s.startsWith("<html") ||
+    s.startsWith("<body") ||
+    s.startsWith("<head") ||
+    s.includes("</html>") ||
+    s.includes("</body>") ||
+    s.includes("</head>")
+  );
+}
+
 export function WriteCard() {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
-  const [sharedUrl, setSharedUrl] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
+  const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -55,12 +80,16 @@ export function WriteCard() {
     if (!value) return toast.error("请输入内容");
     setLoading(true);
     setResult("");
-    setSharedUrl("");
+    setSourceUrl("");
+    setRenderUrl("");
     try {
       const d = await writeData(key, value);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
-        setSharedUrl(`${BASE}/p/${key}`);
+        setSourceUrl(`${BASE}/${key}`);
+        if (looksLikeHtml(value)) {
+          setRenderUrl(`${BASE}/p/${key}`);
+        }
         toast.success("写入成功");
       } else toast.error(d.error || "写入失败");
     } catch (e: any) {
@@ -74,7 +103,8 @@ export function WriteCard() {
     if (!key) return toast.error("请输入 Key");
     setLoading(true);
     setResult("");
-    setSharedUrl("");
+    setSourceUrl("");
+    setRenderUrl("");
     try {
       const d = await deleteData(key);
       setResult(JSON.stringify(d, null, 2));
@@ -87,9 +117,9 @@ export function WriteCard() {
     }
   }
 
-  async function copyUrl() {
+  async function copyUrl(url: string) {
     try {
-      await navigator.clipboard.writeText(sharedUrl);
+      await navigator.clipboard.writeText(url);
       toast.success("链接已复制");
     } catch {
       toast.error("复制失败，请手动复制");
@@ -120,17 +150,20 @@ export function WriteCard() {
           className="font-mono"
         />
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-col gap-2">
           <Button variant="outline" className="relative">
             <Upload />
-            上传 HTML 文件
+            上传文本文件
             <input
               type="file"
-              accept=".html,.htm"
+              accept={TEXT_ACCEPT}
               className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={handleFileUpload}
             />
           </Button>
+          <p className="text-xs text-muted-foreground">
+            支持 HTML/CSS/JS/MD 等文本文件，可在文件对话框切换"所有文件"
+          </p>
         </div>
 
         <div className="flex gap-2">
@@ -144,18 +177,37 @@ export function WriteCard() {
           </Button>
         </div>
 
-        {sharedUrl && (
+        {/* 源链接（始终显示） */}
+        {sourceUrl && (
+          <div className="rounded-md border bg-muted p-4 flex items-center gap-3">
+            <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-mono text-foreground underline underline-offset-4 break-all flex-1"
+            >
+              {sourceUrl}
+            </a>
+            <Button variant="ghost" size="icon" onClick={() => copyUrl(sourceUrl)}>
+              <Copy className="size-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* HTML 渲染链接（仅 HTML 内容时显示） */}
+        {renderUrl && (
           <div className="rounded-md border bg-primary/5 p-4 flex items-center gap-3">
             <ExternalLink className="size-4 shrink-0 text-primary" />
             <a
-              href={sharedUrl}
+              href={renderUrl}
               target="_blank"
               rel="noreferrer"
               className="text-sm font-mono text-primary underline underline-offset-4 break-all flex-1"
             >
-              {sharedUrl}
+              {renderUrl}
             </a>
-            <Button variant="ghost" size="icon" onClick={copyUrl}>
+            <Button variant="ghost" size="icon" onClick={() => copyUrl(renderUrl)}>
               <Copy className="size-4" />
             </Button>
           </div>
