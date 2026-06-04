@@ -32,9 +32,9 @@ export function WriteCard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB（服务端限制）
     if (file.size > MAX_SIZE) {
-      toast.error(`文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大支持 5MB`);
+      toast.error(`文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大支持 3MB`);
       e.target.value = "";
       return;
     }

@@ -30,7 +30,7 @@ const endpoints = [
 
 const params = [
   { name: "key", required: true, desc: "文本标识，仅支持字母、数字、下划线，最长 512 字符" },
-  { name: "value", required: false, desc: "文本数据，最大 20 万字符。留空则删除" },
+  { name: "value", required: false, desc: "文本数据，最大 3MB。留空则删除" },
 ];
 
 const curlCode = `# 写入
