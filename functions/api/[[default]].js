@@ -72,6 +72,22 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  // 统一 OPTIONS 处理（覆盖所有路径）
+  if (request.method === 'OPTIONS') return new Response(null, {status: 204, headers: CORS});
+
+  // HTML 渲染路由 /p/{key}
+  if (request.method === 'GET' && path.startsWith('/p/')) {
+    const key = path.slice(3);
+    if (key && /^[0-9a-zA-Z_]{1,512}$/.test(key)) {
+      const val = await TEXTDB.get(key);
+      if (val === null || val === undefined) {
+        return new Response('Not Found', {status: 404, headers: CORS});
+      }
+      return new Response(val, {headers: {'Content-Type': 'text/html; charset=utf-8', ...CORS}});
+    }
+    return new Response('Invalid Key', {status: 400, headers: CORS});
+  }
+
   // KV 测试路由
   if (path === '/test-kv' || path === '/test-kv/') {
     try {
