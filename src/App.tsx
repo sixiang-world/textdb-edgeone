@@ -2,10 +2,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WriteCard } from "@/components/WriteCard";
 import { ReadCard } from "@/components/ReadCard";
 import { ApiDocs } from "@/components/ApiDocs";
+import { MdRenderer } from "@/components/MdRenderer";
+import { FolderUpload } from "@/components/FolderUpload";
 import { Toaster } from "@/components/ui/sonner";
 import { Database } from "lucide-react";
 
 export default function App() {
+  // /md/{key} 路由 — SPA 自行解析
+  if (window.location.pathname.startsWith("/md/")) {
+    return (
+      <>
+        <MdRenderer />
+        <Toaster />
+      </>
+    );
+  }
+
   return (
     <>
       <header className="border-b">
@@ -29,6 +41,7 @@ export default function App() {
 
           <TabsContent value="operate" className="flex flex-col gap-6 mt-0">
             <WriteCard />
+            <FolderUpload />
             <ReadCard />
           </TabsContent>
 
