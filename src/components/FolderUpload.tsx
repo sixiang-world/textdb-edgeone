@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Copy, ExternalLink, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
 import { uploadFile } from "@/api";
 import { pathToKey, rewriteRefs, buildFileMap, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
@@ -23,6 +23,7 @@ export function FolderUpload() {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState<UploadResult[]>([]);
   const [entryUrl, setEntryUrl] = useState("");
+  const [collapsed, setCollapsed] = useState(true);    // file list collapsed by default
   const inputRef = useRef<HTMLInputElement>(null);
 
   function genPrefix() {
@@ -200,31 +201,57 @@ export function FolderUpload() {
             />
           </Button>
           <span className="text-xs text-muted-foreground">
-            选择包含 HTML/CSS/JS 的文件夹
+            选择包含 HTML/CSS/JS 的文件夹，建议扁平结构（如 css/、js/ 直接放根目录）
           </span>
         </div>
 
-        {/* File list preview */}
+        {/* File list preview — collapsed summary bar by default */}
         {files.length > 0 && (
-          <div className="rounded-md border bg-muted p-3 text-sm font-mono max-h-48 overflow-auto">
-            {files.map((f, i) => (
-              <div key={f.relativePath} className="flex items-center justify-between py-1">
-                <span className="text-muted-foreground truncate flex-1">
-                  📄 {f.relativePath}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                  → {f.key}
-                </span>
+          <div className="rounded-md border bg-muted p-3 text-sm">
+            {/* Summary bar */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
+              >
+                {collapsed ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+                <span>📄 {files.length} 个文件</span>
+              </button>
+              <div className="flex items-center gap-2">
                 {!uploading && (
                   <button
-                    onClick={() => removeFile(i)}
-                    className="ml-2 text-xs text-destructive hover:underline shrink-0"
+                    onClick={() => setFiles([])}
+                    className="text-xs text-destructive hover:underline"
                   >
-                    移除
+                    清空
                   </button>
                 )}
               </div>
-            ))}
+            </div>
+
+            {/* Expanded file list */}
+            {!collapsed && (
+              <div className="mt-2 font-mono text-xs max-h-48 overflow-auto">
+                {files.map((f, i) => (
+                  <div key={f.relativePath} className="flex items-center justify-between py-1 border-t border-border/50">
+                    <span className="text-muted-foreground truncate flex-1">
+                      📄 {f.relativePath}
+                    </span>
+                    <span className="text-muted-foreground shrink-0 ml-2">
+                      → {f.key}
+                    </span>
+                    {!uploading && (
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="ml-2 text-destructive hover:underline shrink-0"
+                      >
+                        移除
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
