@@ -38,12 +38,19 @@ export function FolderUpload() {
   function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
+    const fileCount = fileList.length;  // capture for TS narrowing in closures
 
     // Reset previous upload state
     setResults([]);
     setEntryUrl("");
     setFiles([]);           // replace, not append
     setReading(true);       // show loading indicator
+
+    console.log(`[FolderUpload] Selected folder: ${fileList.length} files`);
+    for (let diag = 0; diag < Math.min(fileList.length, 10); diag++) {
+      const f = fileList[diag];
+      console.log(`  [${diag}] ${(f as any).webkitRelativePath || f.name} (${f.size} bytes)`);
+    }
 
     // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
     const effectivePrefix = prefix || genPrefix();
@@ -52,24 +59,36 @@ export function FolderUpload() {
     const skipped: string[] = [];
     let processed = 0;
 
-    for (let i = 0; i < fileList.length; i++) {
-      const f = fileList[i];
-      // webkitRelativePath gives the relative path within the folder
+    // Safety timeout: if files aren't processed in 30s, force-exit reading state
+    const safetyTimer = setTimeout(() => {
+      if (processed < fileCount) {
+        console.warn(`[FolderUpload] Safety timeout: ${processed}/${fileCount} files processed`);
+        toast.warning(`读取超时 (${processed}/${fileCount})，请重试`);
+        setFiles(items);
+        setReading(false);
+      }
+    }, 30000);
+
+    function tryComplete() {
+      processed++;
+      if (processed === fileCount) {
+        clearTimeout(safetyTimer);
+        if (skipped.length > 0) {
+          toast.warning(`跳过 ${skipped.length} 个文件`);
+        }
+        setFiles(items);
+        setReading(false);
+      }
+    }
+
+    for (let i = 0; i < fileCount; i++) {
+      const f = fileList![i];
       const relPath = (f as any).webkitRelativePath || f.name;
 
-      // Read file content
       const reader = new FileReader();
       reader.onerror = () => {
         skipped.push(relPath);
-        processed++;
-        // Check completion
-        if (processed === fileList.length) {
-          if (skipped.length > 0) {
-            toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
-          }
-          setFiles(items);
-          setReading(false);
-        }
+        tryComplete();
       };
       reader.onload = (ev) => {
         const result = ev.target?.result;
@@ -88,15 +107,12 @@ export function FolderUpload() {
             });
           }
         }
-        processed++;
-
-        if (processed === fileList.length) {
-          if (skipped.length > 0) {
-            toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
-          }
-          setFiles(items);
-          setReading(false);
-        }
+        tryComplete();
+      };
+      reader.onabort = () => {
+        console.warn(`[FolderUpload] FileReader aborted: ${relPath}`);
+        skipped.push(relPath);
+        tryComplete();
       };
       reader.readAsText(f);
     }
