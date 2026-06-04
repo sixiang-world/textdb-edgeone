@@ -8,15 +8,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Copy, ExternalLink, Loader2, Shuffle, Trash2, Upload } from "lucide-react";
 import { writeData, deleteData } from "@/api";
 import { toast } from "sonner";
-import { Loader2, Shuffle, Trash2 } from "lucide-react";
+
+const BASE = location.origin;
 
 export function WriteCard() {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [sharedUrl, setSharedUrl] = useState("");
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -25,16 +28,32 @@ export function WriteCard() {
     setKey(k);
   }
 
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      setValue(text);
+      if (!key) genKey();
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
   async function handleWrite() {
     if (!key) return toast.error("请输入 Key");
-    if (!value) return toast.error("请输入 Value");
+    if (!value) return toast.error("请输入内容");
     setLoading(true);
     setResult("");
+    setSharedUrl("");
     try {
       const d = await writeData(key, value);
       setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) toast.success("写入成功");
-      else toast.error(d.error || "写入失败");
+      if (d.status === 1) {
+        setSharedUrl(`${BASE}/p/${key}`);
+        toast.success("写入成功");
+      } else toast.error(d.error || "写入失败");
     } catch (e: any) {
       setResult("请求失败: " + e.message);
     } finally {
@@ -46,6 +65,7 @@ export function WriteCard() {
     if (!key) return toast.error("请输入 Key");
     setLoading(true);
     setResult("");
+    setSharedUrl("");
     try {
       const d = await deleteData(key);
       setResult(JSON.stringify(d, null, 2));
@@ -56,6 +76,11 @@ export function WriteCard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function copyUrl() {
+    navigator.clipboard.writeText(sharedUrl);
+    toast.success("链接已复制");
   }
 
   return (
@@ -81,6 +106,20 @@ export function WriteCard() {
           onChange={(e) => setValue(e.target.value)}
           className="font-mono"
         />
+
+        <div className="flex gap-2 items-center">
+          <Button variant="outline" className="relative">
+            <Upload />
+            上传 HTML 文件
+            <input
+              type="file"
+              accept=".html,.htm"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={handleFileUpload}
+            />
+          </Button>
+        </div>
+
         <div className="flex gap-2">
           <Button onClick={handleWrite} disabled={loading}>
             {loading && <Loader2 className="animate-spin" />}
@@ -91,6 +130,24 @@ export function WriteCard() {
             删除此 Key
           </Button>
         </div>
+
+        {sharedUrl && (
+          <div className="rounded-md border bg-primary/5 p-4 flex items-center gap-3">
+            <ExternalLink className="size-4 shrink-0 text-primary" />
+            <a
+              href={sharedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-mono text-primary underline underline-offset-4 break-all flex-1"
+            >
+              {sharedUrl}
+            </a>
+            <Button variant="ghost" size="icon" onClick={copyUrl}>
+              <Copy className="size-4" />
+            </Button>
+          </div>
+        )}
+
         {result && (
           <pre className="rounded-md border bg-muted p-4 text-sm font-mono break-all max-h-48 overflow-auto">
             {result}
