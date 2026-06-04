@@ -30,13 +30,15 @@ export function FolderUpload() {
     let p = "site_";
     for (let i = 0; i < 8; i++) p += c[Math.floor(Math.random() * c.length)];
     setPrefix(p);
+    return p;  // return for immediate use in callbacks (setState is async)
   }
 
   function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
-    if (!prefix) genPrefix();
+    // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
+    const effectivePrefix = prefix || genPrefix();
 
     const items: UploadItem[] = [];
     const skipped: string[] = [];
@@ -50,26 +52,32 @@ export function FolderUpload() {
       const reader = new FileReader();
       reader.onerror = () => {
         skipped.push(relPath);
+        // Check completion even on error (onload won't run for this file)
+        if (items.length + skipped.length === fileList.length) {
+          if (skipped.length > 0) {
+            toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
+          }
+          setFiles(prev => [...prev, ...items]);
+        }
       };
       reader.onload = (ev) => {
         const content = ev.target?.result as string;
 
         if (isBinary(content)) {
           skipped.push(relPath);
-          return;
+        } else {
+          items.push({
+            relativePath: relPath,
+            name: f.name,
+            content,
+            key: pathToKey(effectivePrefix, relPath),
+          });
         }
-
-        items.push({
-          relativePath: relPath,
-          name: f.name,
-          content,
-          key: pathToKey(prefix, relPath),
-        });
 
         // When all files processed, update state
         if (items.length + skipped.length === fileList.length) {
           if (skipped.length > 0) {
-            toast.warning(`跳过 ${skipped.length} 个二进制文件`);
+            toast.warning(`跳过 ${skipped.length} 个二进制文件/错误文件`);
           }
           setFiles(prev => [...prev, ...items]);
         }
