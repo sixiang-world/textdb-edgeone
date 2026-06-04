@@ -19,20 +19,47 @@ export function pathToKey(prefix: string, relativePath: string): string {
 /**
  * HTML 引用改写：将 <link href> 和 <script src> 的相对路径
  * 替换为上传后的远程 URL
+ *
+ * @param html        HTML 内容
+ * @param prefix      项目前缀
+ * @param fileMap     相对路径 → KV key 映射
+ * @param htmlRelPath HTML 文件自身的相对路径（用于解析相对路径）
  */
 export function rewriteRefs(
   html: string,
   prefix: string,
-  fileMap: Map<string, string>  // relativePath → KV key
+  fileMap: Map<string, string>,
+  htmlRelPath?: string,
 ): string {
+  // Determine the base directory of the HTML file (for resolving relative paths)
+  const baseDir = htmlRelPath
+    ? htmlRelPath.replace(/\/[^/]*$/, "")  // strip filename → directory
+    : "";
+
+  function resolveRef(url: string): string | null {
+    if (isAbsoluteUrl(url)) return null;
+
+    // Try the URL as-is first (file in root of folder)
+    let resolved = resolveRelative(url, fileMap, prefix);
+    if (resolved) return resolved;
+
+    // If HTML has a base dir, try prepending it (e.g. "css/style.css" → "00000/css/style.css")
+    if (baseDir) {
+      const prefixed = baseDir + "/" + url.replace(/^\.{1,2}\//, "");
+      resolved = resolveRelative(prefixed, fileMap, prefix);
+      if (resolved) return resolved;
+    }
+
+    return null;
+  }
+
   let result = html;
 
   // Rewrite <link href="...">
   result = result.replace(
     /<link\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi,
     (match, url: string) => {
-      if (isAbsoluteUrl(url)) return match;
-      const resolved = resolveRelative(url, fileMap, prefix);
+      const resolved = resolveRef(url);
       if (!resolved) return match;
       return match.replace(url, `${BASE}/${resolved}`);
     }
@@ -42,8 +69,7 @@ export function rewriteRefs(
   result = result.replace(
     /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi,
     (match, url: string) => {
-      if (isAbsoluteUrl(url)) return match;
-      const resolved = resolveRelative(url, fileMap, prefix);
+      const resolved = resolveRef(url);
       if (!resolved) return match;
       return match.replace(url, `${BASE}/${resolved}`);
     }

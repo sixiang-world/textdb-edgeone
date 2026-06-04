@@ -139,7 +139,7 @@ export function FolderUpload() {
       if (f.name.endsWith(".html") || f.name.endsWith(".htm")) {
         return {
           ...f,
-          content: rewriteRefs(f.content, prefix, fileMap),
+          content: rewriteRefs(f.content, prefix, fileMap, f.relativePath),
         };
       }
       return f;

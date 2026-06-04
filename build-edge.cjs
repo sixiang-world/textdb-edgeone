@@ -34,7 +34,7 @@ const lines = [
   "const HTML_SECURITY_HEADERS = {",
   "  'Content-Type': 'text/html; charset=utf-8',",
   "  'X-Content-Type-Options': 'nosniff',",
-  "  'Content-Security-Policy': \"default-src 'self'; script-src 'unsafe-inline'; object-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'none'; form-action 'none'; base-uri 'self'; frame-ancestors 'self'\",",
+  "  'Content-Security-Policy': \"default-src 'self'; script-src 'unsafe-inline' 'self'; object-src 'none'; style-src 'unsafe-inline' 'self'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'none'; form-action 'none'; base-uri 'self'; frame-ancestors 'self'\",",
   "};",
   "",
   "function getMimeType(p) {",
