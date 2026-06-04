@@ -31,7 +31,16 @@ export function WriteCard() {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_SIZE) {
+      toast.error(`文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大支持 5MB`);
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => toast.error("文件读取失败");
     reader.onload = () => {
       const text = reader.result as string;
       setValue(text);
@@ -78,9 +87,13 @@ export function WriteCard() {
     }
   }
 
-  function copyUrl() {
-    navigator.clipboard.writeText(sharedUrl);
-    toast.success("链接已复制");
+  async function copyUrl() {
+    try {
+      await navigator.clipboard.writeText(sharedUrl);
+      toast.success("链接已复制");
+    } catch {
+      toast.error("复制失败，请手动复制");
+    }
   }
 
   return (

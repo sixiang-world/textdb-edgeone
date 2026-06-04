@@ -23,7 +23,7 @@ const B = location.origin;
 const endpoints = [
   { method: "POST", color: "default" as const, path: "/update/", desc: "写入 / 更新 / 删除" },
   { method: "GET", color: "secondary" as const, path: "/{key}", desc: "读取数据" },
-  { method: "GET", color: "default" as const, path: "/p/{key}", desc: "HTML 渲染（浏览器直接看）" },
+  { method: "GET", color: "secondary" as const, path: "/p/{key}", desc: "HTML 渲染（浏览器直接看）" },
   { method: "POST", color: "default" as const, path: "/{key}", desc: "直接写入（简写）" },
   { method: "DELETE", color: "destructive" as const, path: "/{key}", desc: "删除数据" },
 ];
