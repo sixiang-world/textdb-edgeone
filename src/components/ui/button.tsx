@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_2px_0_rgba(0,0,0,0.15)] hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)] hover:translate-y-px active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.2)] active:translate-y-[1.5px] border-primary/90",
+          "bg-primary text-primary-foreground shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.18)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] active:translate-y-[2px] border-primary/90",
         outline:
-          "border-border bg-background shadow-[0_2px_0_var(--color-border)] hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] hover:translate-y-px active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.1)] active:translate-y-[1.5px] hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-background shadow-[0_3px_0_var(--color-border)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.18)] active:translate-y-[2px] hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-[0_2px_0_rgba(0,0,0,0.1)] hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] hover:translate-y-px active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.15)] active:translate-y-[1.5px] hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground shadow-[0_3px_0_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.14)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] active:translate-y-[2px] hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "shadow-none hover:bg-muted hover:text-foreground hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.08)] aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "shadow-none hover:bg-muted hover:text-foreground hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_3px_rgba(0,0,0,0.12)] aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive shadow-[0_2px_0_rgba(0,0,0,0.08)] hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] hover:translate-y-px active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.15)] active:translate-y-[1.5px] hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive/10 text-destructive shadow-[0_3px_0_rgba(0,0,0,0.12)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.14)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] active:translate-y-[2px] hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline shadow-none",
       },
       size: {

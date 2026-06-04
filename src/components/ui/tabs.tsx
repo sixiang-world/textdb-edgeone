@@ -27,7 +27,7 @@ const tabsListVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-muted",
+        default: "bg-muted gap-2",
         line: "gap-1 bg-transparent",
       },
     },
@@ -62,9 +62,9 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       className={cn(
         "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all duration-150 group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 dark:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "shadow-[0_2px_0_var(--color-border)] border-border/80 bg-background",
-        "hover:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] hover:translate-y-[0.5px] hover:border-border",
-        "data-active:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.1)] data-active:translate-y-px data-active:bg-muted data-active:text-foreground data-active:border-border",
+        "shadow-[0_3px_0_var(--color-border)] border-border/80 bg-background",
+        "hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)] hover:translate-y-px hover:border-border",
+        "data-active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.18)] data-active:translate-y-[1.5px] data-active:bg-muted data-active:text-foreground data-active:border-border",
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:shadow-none group-data-[variant=line]/tabs-list:data-active:shadow-none group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
         className
       )}
