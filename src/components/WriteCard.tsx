@@ -112,7 +112,7 @@ export function WriteCard() {
           setRenderUrl(`${BASE}/p/${key}`);
         }
         if (looksLikeJs(value)) {
-          setJsUrl(`${BASE}/js/${key}`);
+          setJsUrl(`${BASE}/file/js/${key}`);
         }
         toast.success("写入成功");
       } else toast.error(d.error || "写入失败");

@@ -25,7 +25,7 @@ const endpoints = [
   { method: "GET", color: "secondary" as const, path: "/{key}", desc: "读取数据" },
   { method: "GET", color: "secondary" as const, path: "/p/{key}", desc: "HTML 渲染" },
   { method: "GET", color: "secondary" as const, path: "/md/{key}", desc: "Markdown 渲染" },
-  { method: "GET", color: "secondary" as const, path: "/js/{key}", desc: "JavaScript 直出（application/javascript）" },
+  { method: "GET", color: "secondary" as const, path: "/file/{ext}/{key}", desc: "按文件类型输出（js/css/json/html 等）" },
   { method: "POST", color: "default" as const, path: "/{key}", desc: "直接写入（简写）" },
   { method: "DELETE", color: "destructive" as const, path: "/{key}", desc: "删除数据" },
 ];
