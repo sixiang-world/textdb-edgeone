@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, ExternalLink, Loader2, Shuffle, Trash2, Upload } from "lucide-react";
+import { QrCode } from "@/components/QrCode";
 import { writeData, deleteData } from "@/api";
 import { toast } from "sonner";
 
@@ -192,6 +193,13 @@ export function WriteCard() {
             <Button variant="ghost" size="icon" onClick={() => copyUrl(sourceUrl)}>
               <Copy className="size-4" />
             </Button>
+          </div>
+        )}
+
+        {/* 二维码 */}
+        {sourceUrl && (
+          <div className="flex justify-center pt-1">
+            <QrCode url={sourceUrl} />
           </div>
         )}
 

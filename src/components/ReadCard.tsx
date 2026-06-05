@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { readData } from "@/api";
 import { toast } from "sonner";
 import { Loader2, Search } from "lucide-react";
+import { QrCode } from "@/components/QrCode";
 
 export function ReadCard() {
   const [key, setKey] = useState("");
@@ -49,9 +50,18 @@ export function ReadCard() {
           </Button>
         </div>
         {result && (
-          <pre className="rounded-md border bg-muted p-4 text-sm font-mono break-all max-h-48 overflow-auto">
-            {result}
-          </pre>
+          <div className="flex flex-col gap-4">
+            <pre className="rounded-md border bg-muted p-4 text-sm font-mono break-all max-h-48 overflow-auto">
+              {result}
+            </pre>
+            {result !== "（Key 不存在）" &&
+              result !== "" &&
+              !result.startsWith("请求失败") && (
+              <div className="flex justify-center">
+                <QrCode url={`${location.origin}/${key}`} />
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
