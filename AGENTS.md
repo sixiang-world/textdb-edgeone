@@ -67,6 +67,7 @@
 - **按钮三态**: 浮起（`shadow-[0_3px_0]`）→ 悬浮（`inset shadow + translate-y-px`）→ 点击（更深 inset shadow + translate-y-[2px]）
 - **标签切换三态**: 同上，选中额外加 `bg-muted`
 - **输入框聚焦**: 2px 环 + 40% 边框色，保持轻盈
+- **主题变量**: `src/index.css` 通过 `@theme inline` 定义 `--color-ring: oklch(0.708 0 0)` 修复聚焦黑边；项目未使用完整 shadcn/ui 主题变量（按钮阴影用硬编码 rgba，不依赖 CSS 变量）
 
 ## 已知限制
 
