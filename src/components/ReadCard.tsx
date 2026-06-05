@@ -16,16 +16,23 @@ export function ReadCard() {
   const [key, setKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [error, setError] = useState("");
 
   async function handleRead() {
     if (!key) return toast.error("请输入 Key");
     setLoading(true);
     setResult("");
+    setError("");
     try {
       const t = await readData(key);
-      setResult(t || "（Key 不存在）");
+      if (t) {
+        setResult(t);
+      } else {
+        setResult("");
+        setError("not_found");
+      }
     } catch (e: any) {
-      setResult("请求失败: " + e.message);
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -54,13 +61,14 @@ export function ReadCard() {
             <pre className="rounded-md border bg-muted p-4 text-sm font-mono break-all max-h-48 overflow-auto">
               {result}
             </pre>
-            {result !== "（Key 不存在）" &&
-              result !== "" &&
-              !result.startsWith("请求失败") && (
-              <div className="flex justify-center">
-                <QrCode url={`${location.origin}/${key}`} />
-              </div>
-            )}
+            <div className="flex justify-center">
+              <QrCode url={`${location.origin}/${key}`} />
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md border bg-destructive/10 text-destructive p-3 text-sm">
+            {error === "not_found" ? "Key 不存在" : `请求失败: ${error}`}
           </div>
         )}
       </CardContent>

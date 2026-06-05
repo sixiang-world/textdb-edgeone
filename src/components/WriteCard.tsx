@@ -44,7 +44,7 @@ function looksLikeJs(value: string): boolean {
   const s = value.trimStart();
   return (
     s.startsWith("// ==UserScript==") ||
-    s.startsWith("//") ||
+    s.startsWith("// @") ||
     s.startsWith("function ") ||
     s.startsWith("const ") ||
     s.startsWith("let ") ||
