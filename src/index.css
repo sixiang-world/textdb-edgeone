@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme inline {
+  --color-ring: oklch(0.708 0 0);
+}

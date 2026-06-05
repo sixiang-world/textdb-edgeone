@@ -83,7 +83,10 @@ export function MdRenderer() {
 
       {/* Markdown content */}
       <article className="prose dark:prose-invert max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          disallowedElements={["script", "style", "iframe", "object", "embed", "form"]}
+        >
           {markdown}
         </ReactMarkdown>
       </article>
