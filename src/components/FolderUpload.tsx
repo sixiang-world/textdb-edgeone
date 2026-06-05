@@ -63,7 +63,7 @@ export function FolderUpload() {
     const safetyTimer = setTimeout(() => {
       if (processed < fileCount) {
         console.warn(`[FolderUpload] Safety timeout: ${processed}/${fileCount} files processed`);
-        toast.warning(`读取超时 (${processed}/${fileCount})，请重试`);
+        toast.warning(`读取超时 (${processed}/${fileCount})，仅已读取的文件保留`);
         setFiles(items);
         setReading(false);
       }
@@ -127,11 +127,11 @@ export function FolderUpload() {
     setResults([]);
     setEntryUrl("");
 
-    // Recompute keys based on current prefix (may have changed since selection)
-    const toUpload: UploadItem[] = files.map(f => ({
-      ...f,
-      key: pathToKey(prefix, f.relativePath),
-    }));
+    // Use keys as computed at selection time (not recomputed with current prefix).
+    // This ensures the file list display matches what gets uploaded.
+    // If the user changed prefix after selection, those changes are intentionally ignored
+    // to avoid silent key mismatches between display and upload.
+    const toUpload: UploadItem[] = files;
 
     // Build file map & rewrite HTML refs
     const fileMap = buildFileMap(prefix, toUpload);

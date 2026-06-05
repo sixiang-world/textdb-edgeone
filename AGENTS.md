@@ -94,6 +94,9 @@ font-src 'self' https:; connect-src 'none'; form-action 'none';
 base-uri 'self'; frame-ancestors 'self'
 ```
 
+- `script-src 'unsafe-inline'` — 设计取舍：允许用户上传的 HTML 中使用内联脚本，否则多数网页模板无法正常工作。在公开可写场景下是真实 XSS 风险，但去掉它会导致核心功能不可用
+- `connect-src 'none'` — 禁止所有 fetch/XHR，用户 HTML 中的 AJAX 调用会静默失败。安全加固，但可能让初次使用者困惑
+
 ## 分支
 
 - `feature/textdb-enhancements` — 当前活跃开发分支（文件夹上传、MdRenderer、CSP 修复）
