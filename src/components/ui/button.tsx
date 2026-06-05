@@ -11,8 +11,11 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.18)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] active:translate-y-[2px] border-primary/90",
+        // NOTE: --color-border 未在 CSS 中定义，shadow-[0_3px_0_var(--color-border)] 实际不生效。
+        //        当前有意保留此状态：outline 按钮呈现扁平效果，符合整体极简线条风格。
+        //        如需恢复 3D 阴影，在 src/index.css @theme inline 中添加 --color-border 定义即可。
         outline:
-          "border-border bg-background shadow-[0_3px_0_var(--color-border)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.18)] active:translate-y-[2px] hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-background hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.1)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.18)] active:translate-y-[2px] hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground shadow-[0_3px_0_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_3px_rgba(0,0,0,0.14)] hover:translate-y-px active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] active:translate-y-[2px] hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
