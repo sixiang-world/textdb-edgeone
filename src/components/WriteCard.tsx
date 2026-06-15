@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, ExternalLink, Loader2, Shuffle, Trash2, Upload } from "lucide-react";
+import { QrCode } from "@/components/QrCode";
 import { writeData, deleteData } from "@/api";
 import { toast } from "sonner";
 
@@ -38,6 +39,24 @@ function looksLikeHtml(value: string): boolean {
   );
 }
 
+/** Heuristic: does the value look like JavaScript / UserScript? */
+function looksLikeJs(value: string): boolean {
+  const s = value.trimStart();
+  return (
+    s.startsWith("// ==UserScript==") ||
+    s.startsWith("// @") ||
+    s.startsWith("function ") ||
+    s.startsWith("const ") ||
+    s.startsWith("let ") ||
+    s.startsWith("var ") ||
+    s.startsWith("import ") ||
+    s.startsWith("export ") ||
+    s.startsWith("async function") ||
+    s.startsWith("window.") ||
+    s.startsWith("document.")
+  );
+}
+
 export function WriteCard() {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
@@ -45,6 +64,7 @@ export function WriteCard() {
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
+  const [jsUrl, setJsUrl] = useState("");            // /js/{key} JS 链接（仅 JS 内容）
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -82,6 +102,7 @@ export function WriteCard() {
     setResult("");
     setSourceUrl("");
     setRenderUrl("");
+    setJsUrl("");
     try {
       const d = await writeData(key, value);
       setResult(JSON.stringify(d, null, 2));
@@ -89,6 +110,9 @@ export function WriteCard() {
         setSourceUrl(`${BASE}/${key}`);
         if (looksLikeHtml(value)) {
           setRenderUrl(`${BASE}/p/${key}`);
+        }
+        if (looksLikeJs(value)) {
+          setJsUrl(`${BASE}/file/js/${key}`);
         }
         toast.success("写入成功");
       } else toast.error(d.error || "写入失败");
@@ -105,6 +129,7 @@ export function WriteCard() {
     setResult("");
     setSourceUrl("");
     setRenderUrl("");
+    setJsUrl("");
     try {
       const d = await deleteData(key);
       setResult(JSON.stringify(d, null, 2));
@@ -190,6 +215,31 @@ export function WriteCard() {
               {sourceUrl}
             </a>
             <Button variant="ghost" size="icon" onClick={() => copyUrl(sourceUrl)}>
+              <Copy className="size-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* 二维码 */}
+        {sourceUrl && (
+          <div className="flex justify-center pt-1">
+            <QrCode url={sourceUrl} />
+          </div>
+        )}
+
+        {/* JS 链接（仅 JS 内容时显示） */}
+        {jsUrl && (
+          <div className="rounded-md border bg-muted p-4 flex items-center gap-3">
+            <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+            <a
+              href={jsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-mono text-foreground underline underline-offset-4 break-all flex-1"
+            >
+              {jsUrl}
+            </a>
+            <Button variant="ghost" size="icon" onClick={() => copyUrl(jsUrl)}>
               <Copy className="size-4" />
             </Button>
           </div>

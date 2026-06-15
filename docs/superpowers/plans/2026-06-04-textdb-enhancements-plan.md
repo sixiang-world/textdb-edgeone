@@ -1,3 +1,5 @@
+> **Status: ✅ 已完成** — 2026-06-04 实施，已合入 master。本文档保留作为历史参考。
+
 # TextDB EdgeOne 后续增强实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
