@@ -8,12 +8,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, ExternalLink, Loader2, Shuffle, Trash2, Upload } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  ExternalLink,
+  Loader2,
+  Shuffle,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { QrCode } from "@/components/QrCode";
 import { writeData, deleteData } from "@/api";
 import { toast } from "sonner";
 
 const BASE = location.origin;
+
+const COLLAPSE_HEAD = 5;
+const COLLAPSE_TAIL = 5;
+
+/** 折叠预览：首 5 行 + "..." + 末 5 行；行数不足时返回 null */
+function getCollapsedPreview(text: string): string | null {
+  const lines = text.split("\n");
+  if (lines.length <= COLLAPSE_HEAD + COLLAPSE_TAIL) return null;
+  return (
+    lines.slice(0, COLLAPSE_HEAD).join("\n") +
+    "\n...\n" +
+    lines.slice(-COLLAPSE_TAIL).join("\n")
+  );
+}
 
 const TEXT_ACCEPT = [
   ".txt", ".log", ".csv", ".tsv",
@@ -60,6 +83,7 @@ function looksLikeJs(value: string): boolean {
 export function WriteCard() {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
@@ -89,6 +113,8 @@ export function WriteCard() {
     reader.onload = () => {
       const text = reader.result as string;
       setValue(text);
+      // 上传后默认折叠（仅当内容足够长时）
+      setCollapsed(getCollapsedPreview(text) !== null);
       if (!key) genKey();
     };
     reader.readAsText(file);
@@ -167,13 +193,51 @@ export function WriteCard() {
             <Shuffle />
           </Button>
         </div>
-        <Textarea
-          placeholder="在此输入文本内容..."
-          rows={5}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="font-mono"
-        />
+        {(() => {
+          const preview = getCollapsedPreview(value);
+          const canCollapse = preview !== null;
+          if (collapsed && canCollapse) {
+            return (
+              <div className="rounded-md border bg-muted/30 font-mono text-sm">
+                <pre className="p-3 whitespace-pre-wrap break-all overflow-auto max-h-72 leading-relaxed">
+                  {preview}
+                </pre>
+                <div className="border-t px-3 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCollapsed(false)}
+                  >
+                    <ChevronDown />
+                    展开全部
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div className="flex flex-col gap-2">
+              <Textarea
+                placeholder="在此输入文本内容..."
+                rows={5}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="font-mono"
+              />
+              {canCollapse && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setCollapsed(true)}
+                >
+                  <ChevronUp />
+                  折叠预览
+                </Button>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="flex flex-col gap-2">
           <Button variant="outline" className="relative">
