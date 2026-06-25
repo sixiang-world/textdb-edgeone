@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WriteCard } from "@/components/WriteCard";
 import { ReadCard } from "@/components/ReadCard";
 import { ApiDocs } from "@/components/ApiDocs";
+import { Changelog } from "@/components/Changelog";
 import { MdRenderer } from "@/components/MdRenderer";
 import { FolderUpload } from "@/components/FolderUpload";
 import { Toaster } from "@/components/ui/sonner";
@@ -37,6 +38,7 @@ export default function App() {
           <TabsList>
             <TabsTrigger value="operate">操作</TabsTrigger>
             <TabsTrigger value="api">API 文档</TabsTrigger>
+            <TabsTrigger value="changelog">版本日志</TabsTrigger>
           </TabsList>
 
           <TabsContent value="operate" className="flex flex-col gap-6 mt-0">
@@ -47,6 +49,10 @@ export default function App() {
 
           <TabsContent value="api" className="mt-0">
             <ApiDocs />
+          </TabsContent>
+
+          <TabsContent value="changelog" className="mt-0">
+            <Changelog />
           </TabsContent>
         </Tabs>
       </main>
