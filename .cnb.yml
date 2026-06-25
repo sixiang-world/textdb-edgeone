@@ -3,8 +3,10 @@
 ##   GIT_PUSH_USER   - GitHub 用户名
 ##   GIT_PUSH_TOKEN  - GitHub Personal Access Token（需 repo 权限）
 ## GitHub 仓库名与 CNB 同名（textdb-edgeone），如不同请修改下方 GITHUB_REPO 变量
+##
+## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
 
-main:
+"(main|dev)":
   push:
     - name: sync-to-github
       runner:
@@ -24,26 +26,5 @@ main:
             git remote add github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git" 2>/dev/null || \
               git remote set-url github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git"
             # 推送当前分支与所有标签到 GitHub
-            git push github "HEAD:${CNB_BRANCH}" --force --tags
-            echo "✅ 已同步到 GitHub"
-
-master:
-  push:
-    - name: sync-to-github
-      runner:
-        cpus: 1
-      docker:
-        image: alpine/git:v2.45.2
-      imports:
-        - https://cnb.cool/shisheng820/git-key/-/blob/main/git-push.yml
-      env:
-        GITHUB_REPO: textdb-edgeone
-      stages:
-        - name: mirror-to-github
-          script: |
-            set -e
-            echo "同步分支 ${CNB_BRANCH} 到 GitHub: ${GIT_PUSH_USER}/${GITHUB_REPO}"
-            git remote add github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git" 2>/dev/null || \
-              git remote set-url github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git"
             git push github "HEAD:${CNB_BRANCH}" --force --tags
             echo "✅ 已同步到 GitHub"
