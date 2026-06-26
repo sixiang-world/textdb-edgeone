@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WriteCard } from "@/components/WriteCard";
-import { ReadCard } from "@/components/ReadCard";
 import { ApiDocs } from "@/components/ApiDocs";
 import { Changelog } from "@/components/Changelog";
 import { MdRenderer } from "@/components/MdRenderer";
@@ -51,7 +50,6 @@ export default function App() {
           <TabsContent value="operate" className="flex flex-col gap-6 mt-0">
             <WriteCard onStatsRefresh={onStatsRefresh} />
             <FolderUpload onStatsRefresh={onStatsRefresh} />
-            <ReadCard />
           </TabsContent>
 
           <TabsContent value="api" className="mt-0">

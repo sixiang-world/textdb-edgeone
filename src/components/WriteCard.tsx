@@ -14,12 +14,14 @@ import {
   Copy,
   ExternalLink,
   Loader2,
+  Lock,
+  Search,
   Shuffle,
   Trash2,
   Upload,
 } from "lucide-react";
 import { QrCode } from "@/components/QrCode";
-import { writeData, deleteData } from "@/api";
+import { writeData, deleteData, readData } from "@/api";
 import { toast } from "sonner";
 
 const BASE = location.origin;
@@ -89,6 +91,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
   const [jsUrl, setJsUrl] = useState("");            // /js/{key} JS 链接（仅 JS 内容）
+  const [readOnly, setReadOnly] = useState(false);   // 读取后锁定编辑
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -171,6 +174,36 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     }
   }
 
+  async function handleRead() {
+    if (!key) return toast.error("请输入 Key");
+    setLoading(true);
+    setResult("");
+    setSourceUrl("");
+    setRenderUrl("");
+    setJsUrl("");
+    setReadOnly(false);
+    try {
+      const t = await readData(key);
+      if (t) {
+        setValue(t);
+        setSourceUrl(`${BASE}/${key}`);
+        if (looksLikeHtml(t)) setRenderUrl(`${BASE}/p/${key}`);
+        if (looksLikeJs(t)) setJsUrl(`${BASE}/file/js/${key}`);
+        const preview = getCollapsedPreview(t);
+        if (preview !== null) setCollapsed(true);
+        setReadOnly(true);
+        toast.success("读取成功");
+      } else {
+        setResult("Key 不存在");
+        toast.error("Key 不存在");
+      }
+    } catch (e: any) {
+      setResult("请求失败: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function copyUrl(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -183,7 +216,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>写入 / 更新</CardTitle>
+        <CardTitle>写入 / 更新 / 读取</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex gap-2">
@@ -191,6 +224,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             placeholder="my_data_key"
             value={key}
             onChange={(e) => setKey(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRead()}
           />
           <Button variant="outline" size="icon" onClick={genKey}>
             <Shuffle />
@@ -220,12 +254,27 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           }
           return (
             <div className="flex flex-col gap-2">
+              {readOnly && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setReadOnly(false)}
+                    className="gap-1.5"
+                  >
+                    <Lock className="size-3.5" />
+                    只读模式
+                  </Button>
+                  <span>— 点击解锁后可编辑</span>
+                </div>
+              )}
               <Textarea
                 placeholder="在此输入文本内容..."
                 rows={5}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 className="font-mono"
+                readOnly={readOnly}
               />
               {canCollapse && (
                 <Button
@@ -262,6 +311,10 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           <Button onClick={handleWrite} disabled={loading}>
             {loading && <Loader2 className="animate-spin" />}
             写入
+          </Button>
+          <Button variant="outline" onClick={handleRead} disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : <Search />}
+            读取
           </Button>
           <Button variant="outline" onClick={handleDelete} disabled={loading}>
             <Trash2 />
