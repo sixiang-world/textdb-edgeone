@@ -26,6 +26,14 @@ interface VersionEntry {
  */
 const VERSIONS: VersionEntry[] = [
   {
+    version: "1.1.2",
+    date: "2026-06-26",
+    changes: [
+      { type: "优化", text: "版本日志布局 — 最新版完全展开，旧版本默认折叠前 3 条" },
+      { type: "修复", text: "修复全部历史 lint 错误（15 处）：any→unknown、@ts-ignore→@ts-expect-error、set-state-in-effect、未使用参数等" },
+    ],
+  },
+  {
     version: "1.1.1",
     date: "2026-06-26",
     changes: [
