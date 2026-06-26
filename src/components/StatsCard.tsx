@@ -11,7 +11,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
-export function StatsCard() {
+export function StatsCard({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,7 +33,7 @@ export function StatsCard() {
     }
     load();
     return () => controller.abort();
-  }, []);
+  }, [refreshTrigger]);
 
   return (
     <Card>

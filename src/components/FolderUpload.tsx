@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 const BASE = location.origin;
 
-export function FolderUpload() {
+export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [prefix, setPrefix] = useState("");
   const [files, setFiles] = useState<UploadItem[]>([]);
   const [reading, setReading] = useState(false);      // loading indicator while FileReader is working
@@ -159,6 +159,7 @@ export function FolderUpload() {
     const succeeded = allResults.filter(r => r.success).length;
     const failed = allResults.filter(r => !r.success).length;
     toast.success(`上传完成: ${succeeded} 成功${failed > 0 ? `, ${failed} 失败` : ""}`);
+    onStatsRefresh?.();
 
     // Find entry point (index.html)
     const entry = rewritten.find(

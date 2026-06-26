@@ -80,7 +80,7 @@ function looksLikeJs(value: string): boolean {
   );
 }
 
-export function WriteCard() {
+export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -141,6 +141,7 @@ export function WriteCard() {
           setJsUrl(`${BASE}/file/js/${key}`);
         }
         toast.success("写入成功");
+        onStatsRefresh?.();
       } else toast.error(d.error || "写入失败");
     } catch (e: any) {
       setResult("请求失败: " + e.message);
@@ -159,8 +160,10 @@ export function WriteCard() {
     try {
       const d = await deleteData(key);
       setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) toast.success("已删除");
-      else toast.error(d.error || "删除失败");
+      if (d.status === 1) {
+        toast.success("已删除");
+        onStatsRefresh?.();
+      } else toast.error(d.error || "删除失败");
     } catch (e: any) {
       setResult("请求失败: " + e.message);
     } finally {

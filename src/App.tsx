@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WriteCard } from "@/components/WriteCard";
 import { ReadCard } from "@/components/ReadCard";
@@ -10,6 +11,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { Database, ExternalLink } from "lucide-react";
 
 export default function App() {
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
+  function onStatsRefresh() {
+    setStatsRefreshTrigger((n) => n + 1);
+  }
+
   // /md/{key} 路由 — SPA 自行解析
   if (window.location.pathname.startsWith("/md/")) {
     return (
@@ -43,8 +49,8 @@ export default function App() {
           </TabsList>
 
           <TabsContent value="operate" className="flex flex-col gap-6 mt-0">
-            <WriteCard />
-            <FolderUpload />
+            <WriteCard onStatsRefresh={onStatsRefresh} />
+            <FolderUpload onStatsRefresh={onStatsRefresh} />
             <ReadCard />
           </TabsContent>
 
@@ -59,7 +65,7 @@ export default function App() {
       </main>
 
       <div className="max-w-3xl mx-auto px-4">
-        <StatsCard />
+        <StatsCard refreshTrigger={statsRefreshTrigger} />
       </div>
 
       <footer className="border-t mt-12">
