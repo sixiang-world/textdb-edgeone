@@ -86,7 +86,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingOp, setLoadingOp] = useState<"write" | "read" | "delete" | null>(null);
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
@@ -127,7 +127,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   async function handleWrite() {
     if (!key) return toast.error("请输入 Key");
     if (!value) return toast.error("请输入内容");
-    setLoading(true);
+    setLoadingOp("write");
     setResult("");
     setSourceUrl("");
     setRenderUrl("");
@@ -149,13 +149,13 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     } catch (e: any) {
       setResult("请求失败: " + e.message);
     } finally {
-      setLoading(false);
+      setLoadingOp(null);
     }
   }
 
   async function handleDelete() {
     if (!key) return toast.error("请输入 Key");
-    setLoading(true);
+    setLoadingOp("delete");
     setResult("");
     setSourceUrl("");
     setRenderUrl("");
@@ -170,13 +170,13 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     } catch (e: any) {
       setResult("请求失败: " + e.message);
     } finally {
-      setLoading(false);
+      setLoadingOp(null);
     }
   }
 
   async function handleRead() {
     if (!key) return toast.error("请输入 Key");
-    setLoading(true);
+    setLoadingOp("read");
     setResult("");
     setSourceUrl("");
     setRenderUrl("");
@@ -200,7 +200,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     } catch (e: any) {
       setResult("请求失败: " + e.message);
     } finally {
-      setLoading(false);
+      setLoadingOp(null);
     }
   }
 
@@ -308,16 +308,16 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleWrite} disabled={loading}>
-            {loading && <Loader2 className="animate-spin" />}
+          <Button onClick={handleWrite} disabled={loadingOp !== null}>
+            {loadingOp === "write" ? <Loader2 className="animate-spin" /> : <Upload />}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={loading}>
-            {loading ? <Loader2 className="animate-spin" /> : <Search />}
+          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null}>
+            {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
             读取
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={loading}>
-            <Trash2 />
+          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null}>
+            {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
         </div>
