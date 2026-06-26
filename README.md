@@ -10,6 +10,14 @@
 
 ## 开发
 
+### CNB 云原生开发（推荐）
+
+点击 CNB 仓库页面上的「云原生开发」按钮即可启动在线开发环境。首次启动会自动执行 `npm install` 并验证 typecheck + lint。
+
+环境通过 `.ide/Dockerfile`（基于 [CNB 默认开发环境](https://cnb.cool/cnb/cool/default-dev-env)）+ `.ide/settings.json`（编辑器配置）预配置，开箱即用：formatOnSave、Prettier 默认格式化、Tailwind CSS IntelliSense、ESLint 自动修复等。支持 WebIDE、VSCode、Cursor、CodeBuddy 等客户端连接。
+
+### 本地开发
+
 ```bash
 npm install
 npm run dev          # Vite 本地开发

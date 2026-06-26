@@ -14,6 +14,16 @@ npm run typecheck    # tsc --noEmit
 
 **No test suite exists.** `npm run lint` + `npm run typecheck` 是唯一的 CI 验证。
 
+## Dev Environment (CNB 云原生开发)
+
+点击 CNB 仓库的「云原生开发」按钮即可启动在线环境。配置由以下文件定义：
+
+- **`.ide/Dockerfile`** — 基于 `cnbcool/default-build-env:latest`（已含 Node.js 22、oh-my-zsh、code-server、openssh-server），额外安装 Tailwind CSS / ESLint / Prettier / React Snippets / Error Lens 插件
+- **`.ide/settings.json`** — VSCode 编辑器配置（formatOnSave、Prettier 默认格式化、Tailwind CSS class 补全等）
+- **`.cnb.yml`** ( `$: vscode:` 部分) — 引用 `.ide/Dockerfile`，启动后自动执行 `npm install` → `typecheck` + `lint` 验证
+
+参考 [CNB 默认开发环境](https://cnb.cool/cnb/cool/default-dev-env)。支持 WebIDE / VSCode / Cursor / CodeBuddy 等客户端连接。首次启动后直接 `npm run dev` 即可开发。
+
 ## Architecture
 
 - **前端**: React 19 + Vite + Tailwind CSS v4 + shadcn/ui (radix-nova style)
@@ -29,6 +39,9 @@ Edge Functions cannot use npm packages or Node.js built-ins (fs/path/crypto).
 | File | Role |
 |------|------|
 | `build-edge.cjs` | Build script — bundles dist/ into edge function |
+| `.cnb.yml` | CI pipeline (sync-to-github) + dev environment config |
+| `.ide/Dockerfile` | CNB cloud dev environment image (extends cnbcool/default-build-env) |
+| `.ide/settings.json` | VSCode workspace settings (formatOnSave, Tailwind CSS IntelliSense) |
 | `edge-functions/[[default]].js` | Generated edge function (don't edit) |
 | `src/App.tsx` | Frontend main app |
 | `src/api.ts` | API call wrappers |

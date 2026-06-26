@@ -6,6 +6,27 @@
 ##
 ## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
 
+## ============================================================
+## 云原生开发环境 — 打开开发环境时自动执行
+## 参考: https://cnb.cool/cnb/cool/default-dev-env
+## ============================================================
+$:
+  vscode:
+    - docker:
+        build:
+          dockerfile: .ide/Dockerfile
+          by:
+            - .ide/settings.json
+        services:
+          - vscode
+          - docker
+        stages:
+          - name: install dependencies
+            script: npm install
+          - name: verify build
+            script: npm run typecheck && npm run lint
+
+## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
 "(main|dev)":
   push:
     - name: sync-to-github
