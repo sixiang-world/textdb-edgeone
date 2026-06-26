@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- 数据库圆柱体（黑白线条风） -->
+  <ellipse cx="32" cy="14" rx="20" ry="7" stroke="#000" stroke-width="3"/>
+  <path d="M12 14v36c0 3.9 9 7 20 7s20-3.1 20-7V14" stroke="#000" stroke-width="3"/>
+  <path d="M12 26c0 3.9 9 7 20 7s20-3.1 20-7" stroke="#000" stroke-width="3"/>
+  <path d="M12 38c0 3.9 9 7 20 7s20-3.1 20-7" stroke="#000" stroke-width="3"/>
+</svg>
