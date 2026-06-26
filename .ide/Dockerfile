@@ -6,7 +6,7 @@
 #
 # 参考: https://cnb.cool/cnb/cool/default-dev-env
 
-FROM cnbcool/default-build-env:latest
+FROM cnbcool/default-dev-env:latest
 
 # 安装本项目需要的 VSCode 插件
 # - 默认环境已含: cnb-welcome, vscode-yaml, git-graph, githistory, live-server,
