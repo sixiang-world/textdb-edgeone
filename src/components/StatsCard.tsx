@@ -17,23 +17,22 @@ export function StatsCard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       setLoading(true);
       setError("");
       try {
-        const s = await getStats();
-        if (!cancelled) setStats(s);
-      } catch (e: any) {
-        if (!cancelled) setError(e.message);
+        const s = await getStats(controller.signal);
+        setStats(s);
+      } catch (e: unknown) {
+        if (!controller.signal.aborted)
+          setError(e instanceof Error ? e.message : String(e));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, []);
 
   return (

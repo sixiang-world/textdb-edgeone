@@ -9,8 +9,8 @@ export interface Stats {
   scannedAll: boolean;
 }
 
-export async function getStats(): Promise<Stats> {
-  const res = await fetch(`${BASE}/stats`);
+export async function getStats(signal?: AbortSignal): Promise<Stats> {
+  const res = await fetch(`${BASE}/stats`, { signal });
   const data = await res.json();
   if (data.status !== 1) throw new Error(data.error || "Failed to fetch stats");
   return data.data;
