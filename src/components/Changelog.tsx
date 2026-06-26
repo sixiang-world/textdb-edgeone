@@ -23,6 +23,31 @@ interface VersionEntry {
  */
 const VERSIONS: VersionEntry[] = [
   {
+    version: "1.1.1",
+    date: "2026-06-26",
+    changes: [
+      { type: "新增", text: "写入/读取合并为同一卡片，共享 Key 输入框" },
+      { type: "新增", text: "读取后自动锁定只读模式，解锁后可编辑再保存" },
+      { type: "新增", text: "写入/删除/上传后自动刷新统计面板" },
+      { type: "修复", text: "分离写入/读取/删除的加载状态，避免误触全部转圈" },
+    ],
+  },
+  {
+    version: "1.1.0",
+    date: "2026-06-26",
+    changes: [
+      { type: "新增", text: "统计面板：总 Key 数、总存储量、今日写入次数" },
+      { type: "新增", text: "用计数器替代全量扫描计算总存储量，大幅提升性能" },
+      { type: "优化", text: "KV 命名空间增加 tdb_ 前缀隔离，避免与内部计数器冲突" },
+      { type: "新增", text: "文件夹上传（webkitdirectory），自动重写 HTML 引用路径" },
+      { type: "新增", text: "Markdown 渲染路由 /md/{key}，前端解析 GFM" },
+      { type: "新增", text: "按文件类型输出路由 /file/{ext}/{key}，支持附件下载" },
+      { type: "优化", text: "长文本折叠预览（首尾 5 行），大幅提升大内容编辑体验" },
+      { type: "新增", text: "QR 码生成与下载，写入/读取后均可展示" },
+      { type: "修复", text: "EdgeOne KV 适配：修复 onRequest 入口及 KV 绑定机制" },
+    ],
+  },
+  {
     version: "1.0.0",
     date: "2026-06-26",
     changes: [
