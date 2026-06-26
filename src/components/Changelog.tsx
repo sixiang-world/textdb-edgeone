@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -5,6 +6,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ChangeItem {
   type: "新增" | "优化" | "修复";
@@ -67,6 +70,8 @@ const VERSIONS: VersionEntry[] = [
   },
 ];
 
+const MAX_VISIBLE = 3; // 旧版本默认显示前 3 条
+
 const TYPE_VARIANT: Record<ChangeItem["type"], "default" | "secondary" | "destructive"> = {
   新增: "default",
   优化: "secondary",
@@ -74,32 +79,69 @@ const TYPE_VARIANT: Record<ChangeItem["type"], "default" | "secondary" | "destru
 };
 
 export function Changelog() {
+  // 默认展开最新版本（索引 0），其余折叠
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    VERSIONS.forEach((v, i) => {
+      init[v.version] = i === 0;
+    });
+    return init;
+  });
+
   return (
     <div className="flex flex-col gap-6">
-      {VERSIONS.map((v) => (
-        <Card key={v.version}>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <CardTitle>v{v.version}</CardTitle>
-              <span className="text-sm text-muted-foreground">{v.date}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col gap-3">
-              {v.changes.map((c, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm">
-                  <Badge variant={TYPE_VARIANT[c.type]} className="mt-0.5 shrink-0">
-                    {c.type}
-                  </Badge>
-                  <span className="text-muted-foreground leading-relaxed">
-                    {c.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ))}
+      {VERSIONS.map((v, vi) => {
+        const isExpanded = expanded[v.version] ?? vi === 0;
+        const isLatest = vi === 0;
+        const hasMore = v.changes.length > MAX_VISIBLE;
+        const visible = isExpanded || isLatest
+          ? v.changes
+          : v.changes.slice(0, MAX_VISIBLE);
+
+        return (
+          <Card key={v.version}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <CardTitle>v{v.version}</CardTitle>
+                <span className="text-sm text-muted-foreground">{v.date}</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ul className="flex flex-col gap-3">
+                {visible.map((c, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm">
+                    <Badge variant={TYPE_VARIANT[c.type]} className="mt-0.5 shrink-0">
+                      {c.type}
+                    </Badge>
+                    <span className="text-muted-foreground leading-relaxed">
+                      {c.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {hasMore && !isLatest && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() =>
+                    setExpanded((prev) => ({
+                      ...prev,
+                      [v.version]: !isExpanded,
+                    }))
+                  }
+                >
+                  {isExpanded ? (
+                    <><ChevronUp /> 收起</>
+                  ) : (
+                    <><ChevronDown /> 展开全部（共 {v.changes.length} 条）</>
+                  )}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
