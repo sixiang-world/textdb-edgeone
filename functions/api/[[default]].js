@@ -153,25 +153,34 @@ export async function onRequest(context) {
 
   // 统计路由（仅 GET）
   if (request.method === 'GET' && (path === '/stats' || path === '/stats/')) {
+    let totalKeys = 0, totalSize = 0, writesToday = 0, scannedAll = true, diag = '';
+    // 1) list 分页统计 key 数（独立 try，失败不致命）
     try {
-      let totalKeys = 0;
       let cursor;
-      let scannedAll = true;
-      const MAX_SCAN_KEYS = 5000; // 防止超时，最多扫描 5000 个 key
-      do {
-        const result = await TEXTDB.list({ prefix: KV_PREFIX, limit: 256, cursor });
-        totalKeys += result.keys.length;
+      const MAX_SCAN_KEYS = 5000;
+      while (true) {
+        const opts = { prefix: KV_PREFIX, limit: 256 };
+        if (cursor) opts.cursor = cursor;
+        const result = await TEXTDB.list(opts);
+        const keys = (result && result.keys) || [];
+        totalKeys += keys.length;
         if (totalKeys >= MAX_SCAN_KEYS) { scannedAll = false; break; }
-        cursor = result.complete ? undefined : result.cursor;
-      } while (cursor);
-      // 今日写入计数 + 总存储量（计数器，不加 tdb_ 前缀，天然隔离于用户数据）
+        const done = result.complete || !result.cursor;
+        if (done) break;
+        cursor = result.cursor;
+      }
+    } catch (e) { diag += 'list:' + (e && e.message || e) + '; '; }
+    // 2) 计数器（独立 try）
+    try {
       const today = new Date().toISOString().slice(0, 10);
-      const writesToday = Number(await TEXTDB.get('__writes__' + today) || '0');
-      const totalSize = Number(await TEXTDB.get('__stats_size__') || '0');
-      return new Response(JSON.stringify({status:1, data:{totalKeys, totalSize, writesToday, scannedAll}}), {headers:{'Content-Type':'application/json', ...CORS}});
-    } catch (e) {
-      return new Response(JSON.stringify({status:0, error:e.message}), {status:500, headers:{'Content-Type':'application/json', ...CORS}});
-    }
+      writesToday = Number(await TEXTDB.get('__writes__' + today) || '0');
+    } catch (e) { diag += 'writes:' + (e && e.message || e) + '; '; }
+    try {
+      totalSize = Number(await TEXTDB.get('__stats_size__') || '0');
+    } catch (e) { diag += 'size:' + (e && e.message || e) + '; '; }
+    const payload = {status:1, data:{totalKeys, totalSize, writesToday, scannedAll}};
+    if (diag) payload.diag = diag;
+    return new Response(JSON.stringify(payload), {headers:{'Content-Type':'application/json', ...CORS}});
   }
 
   // KV 测试路由
@@ -185,6 +194,11 @@ export async function onRequest(context) {
     } catch (e) {
       return new Response(JSON.stringify({status:'error', error:e.message, stack:e.stack}), {status:500, headers:{'Content-Type':'application/json'}});
     }
+  }
+
+  // favicon — 返回 204，避免浏览器自动请求产生 404
+  if (request.method === 'GET' && path === '/favicon.ico') {
+    return new Response(null, {status: 204, headers: CORS});
   }
 
   if (path === '/' || path === '/index.html') {
