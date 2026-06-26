@@ -20,4 +20,4 @@ RUN code-server --install-extension bradlc.vscode-tailwindcss \
     && echo "extensions installed"
 
 # 编辑器配置（formatOnSave、Prettier 默认格式化、Tailwind CSS class 补全等）
-COPY settings.json /root/.local/share/code-server/Machine/settings.json
+COPY .ide/settings.json /root/.local/share/code-server/Machine/settings.json
