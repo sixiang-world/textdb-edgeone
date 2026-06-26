@@ -37,6 +37,7 @@ Edge Functions cannot use npm packages or Node.js built-ins (fs/path/crypto).
 | `src/components/FolderUpload.tsx` | Folder upload (webkitdirectory) |
 | `src/components/QrCard.tsx` | QR code display/download |
 | `src/components/ApiDocs.tsx` | API docs panel |
+| `src/components/StatsCard.tsx` | Stats dashboard (total keys, size, writes today) |
 | `src/components/MdRenderer.tsx` | Markdown render route /md/{key} |
 | `src/lib/folderUtils.ts` | Folder upload utils (pathToKey, rewriteRefs, isBinary) |
 
@@ -50,6 +51,7 @@ Edge Functions cannot use npm packages or Node.js built-ins (fs/path/crypto).
 | `GET` | `/p/{key}` | HTML render (CSP headers) |
 | `GET` | `/file/{ext}/{key}` | File by extension (auto Content-Type, html/svg rejected, nosniff) |
 | `GET` | `/md/{key}` | Markdown render (SPA, frontend parses) |
+| `GET` | `/stats` | Stats (totalKeys, totalSize, writesToday) via `TEXTDB.list()` |
 | `DELETE` | `/{key}` | Delete |
 | `OPTIONS` | Any | CORS preflight |
 
@@ -74,6 +76,9 @@ KV key regex: `^[0-9a-zA-Z_]{1,512}$`. KV single-value limit: 5 MiB.
 ## Runtime Constraints
 
 - KV namespace: global `TEXTDB` (not in `context.env`)
+- KV API: `TEXTDB.get(key)`, `TEXTDB.put(key, value)`, `TEXTDB.delete(key)`, `TEXTDB.list({prefix?, limit?, cursor?})`
+- KV list returns `{ complete, cursor, keys: [{key}] }`, max 256 per page
+- KV prefix: `tdb_` applied via `kvKey()` helper. Internal counters use `__writes__YYYY-MM-DD`
 - Request body limit: ~5 MB (Edge Function limit), code enforces 5 MiB
 - CSP on `/p/`: `script-src 'unsafe-inline'` (intentional — user HTML needs inline JS; real XSS risk in public-write scenario)
 - CSP on `/p/`: `connect-src 'none'` (all fetch/XHR blocked in rendered HTML)

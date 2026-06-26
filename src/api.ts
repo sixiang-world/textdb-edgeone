@@ -2,6 +2,20 @@ import type { UploadItem, UploadResult } from "@/lib/folderUtils";
 
 const BASE = location.origin;
 
+export interface Stats {
+  totalKeys: number;
+  totalSize: number;
+  writesToday: number;
+  scannedAll: boolean;
+}
+
+export async function getStats(): Promise<Stats> {
+  const res = await fetch(`${BASE}/stats`);
+  const data = await res.json();
+  if (data.status !== 1) throw new Error(data.error || "Failed to fetch stats");
+  return data.data;
+}
+
 export async function writeData(key: string, value: string) {
   const res = await fetch(`${BASE}/update/`, {
     method: "POST",

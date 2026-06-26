@@ -29,11 +29,13 @@ git push             # 自动部署到 EdgeOne Pages
 | `GET` | `/p/{key}` | HTML 渲染（含 CSP 安全头） |
 | `GET` | `/md/{key}` | Markdown 渲染（前端 SPA） |
 | `GET` | `/file/{ext}/{key}` | 按扩展名输出（自动 Content-Type，不支持 html/svg，含 nosniff） |
+| `GET` | `/stats` | 统计信息（总 Key 数、总存储量、今日写入次数） |
 | `DELETE` | `/{key}` | 删除 |
 
 ## 功能
 
 - **文本读写** — 匿名 Key-Value 存储，支持随机 Key 生成
+- **统计面板** — 页面底部实时展示总 Key 数、总存储量、今日写入次数
 - **QR 码** — 写入/读取成功后自动生成当前链接的二维码，支持下载
 - **文件夹上传** — `webkitdirectory` 选择文件夹，自动前缀、HTML 引用改写、进度条
 - **HTML 渲染** — `/p/{key}` 带 CSP 安全头渲染上传的 HTML 页面
@@ -45,6 +47,8 @@ git push             # 自动部署到 EdgeOne Pages
 - KV 单值上限 5 MiB
 - Edge Functions 不支持 npm 包、Node.js 内置模块
 - `/p/` 路由的 CSP 允许 `unsafe-inline` 脚本（设计取舍）
+- `/stats` 通过 `TEXTDB.list()` 遍历统计，Key 数量较多时响应较慢（最多扫描 5000 个）
+- `/stats` 通过 `TEXTDB.list()` 遍历统计，Key 数量较多时响应较慢（最多扫描 5000 个）
 
 ## License
 
