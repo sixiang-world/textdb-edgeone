@@ -48,8 +48,8 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
     console.log(`[FolderUpload] Selected folder: ${fileList.length} files`);
     for (let diag = 0; diag < Math.min(fileList.length, 10); diag++) {
-      const f = fileList[diag];
-      console.log(`  [${diag}] ${(f as any).webkitRelativePath || f.name} (${f.size} bytes)`);
+      const f = fileList[diag] as File & { webkitRelativePath?: string };
+      console.log(`  [${diag}] ${f.webkitRelativePath || f.name} (${f.size} bytes)`);
     }
 
     // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
@@ -82,8 +82,8 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     }
 
     for (let i = 0; i < fileCount; i++) {
-      const f = fileList![i];
-      const relPath = (f as any).webkitRelativePath || f.name;
+      const f = fileList![i] as File & { webkitRelativePath?: string };
+      const relPath = f.webkitRelativePath || f.name;
 
       const reader = new FileReader();
       reader.onerror = () => {
@@ -213,9 +213,8 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
             <input
               ref={inputRef}
               type="file"
-              // @ts-ignore webkitdirectory is supported in all modern browsers
+              // @ts-expect-error webkitdirectory is supported in all modern browsers
               webkitdirectory=""
-              // @ts-ignore
               directory=""
               className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={handleFolderSelect}

@@ -26,9 +26,9 @@ export function MdRenderer() {
         } else {
           setMarkdown(text);
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (aborted) return;
-        setError("加载失败: " + e.message);
+        setError("加载失败: " + (e instanceof Error ? e.message : String(e)));
       } finally {
         if (!aborted) setLoading(false);
       }

@@ -146,8 +146,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         toast.success("写入成功");
         onStatsRefresh?.();
       } else toast.error(d.error || "写入失败");
-    } catch (e: any) {
-      setResult("请求失败: " + e.message);
+    } catch (e: unknown) {
+      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLoadingOp(null);
     }
@@ -167,8 +167,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         toast.success("已删除");
         onStatsRefresh?.();
       } else toast.error(d.error || "删除失败");
-    } catch (e: any) {
-      setResult("请求失败: " + e.message);
+    } catch (e: unknown) {
+      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLoadingOp(null);
     }
@@ -197,8 +197,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         setResult("Key 不存在");
         toast.error("Key 不存在");
       }
-    } catch (e: any) {
-      setResult("请求失败: " + e.message);
+    } catch (e: unknown) {
+      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLoadingOp(null);
     }

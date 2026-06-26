@@ -14,15 +14,24 @@ export function QrCode({ url, size = 140 }: QrCodeProps) {
 
   useEffect(() => {
     if (!url) return;
-    setQrError(false);
-    setDataUrl("");
+    let cancelled = false;
     QRCode.toDataURL(url, {
       width: size,
       margin: 2,
       color: { dark: "#000", light: "#fff" },
     })
-      .then(setDataUrl)
-      .catch(() => setQrError(true));
+      .then((dataUrl) => {
+        if (!cancelled) {
+          setQrError(false);
+          setDataUrl(dataUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setQrError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [url, size]);
 
   async function handleDownload() {

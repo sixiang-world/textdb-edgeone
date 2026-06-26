@@ -53,12 +53,12 @@ export async function uploadFile(file: UploadItem): Promise<UploadResult> {
       success: data.status === 1,
       error: data.status !== 1 ? (data.error || "Unknown error") : undefined,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     return {
       key: file.key,
       name: file.name,
       success: false,
-      error: e.message,
+      error: e instanceof Error ? e.message : String(e),
     };
   }
 }

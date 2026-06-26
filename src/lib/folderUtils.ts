@@ -12,7 +12,7 @@ export function pathToKey(prefix: string, relativePath: string): string {
   // Normalize: remove leading ./ or ../
   let p = relativePath.replace(/^\.{1,2}\//, "");
   // Replace separators: / and . → _
-  p = p.replace(/[\/.]/g, "_");
+  p = p.replace(/[/.]/g, "_");
   return `${prefix}_${p}`;
 }
 
@@ -27,7 +27,7 @@ export function pathToKey(prefix: string, relativePath: string): string {
  */
 export function rewriteRefs(
   html: string,
-  prefix: string,
+  _prefix: string,
   fileMap: Map<string, string>,
   htmlRelPath?: string,
 ): string {
@@ -40,13 +40,13 @@ export function rewriteRefs(
     if (isAbsoluteUrl(url)) return null;
 
     // Try the URL as-is first (file in root of folder)
-    let resolved = resolveRelative(url, fileMap, prefix);
+    let resolved = resolveRelative(url, fileMap);
     if (resolved) return resolved;
 
     // If HTML has a base dir, try prepending it (e.g. "css/style.css" → "00000/css/style.css")
     if (baseDir) {
       const prefixed = baseDir + "/" + url.replace(/^\.{1,2}\//, "");
-      resolved = resolveRelative(prefixed, fileMap, prefix);
+      resolved = resolveRelative(prefixed, fileMap);
       if (resolved) return resolved;
     }
 
@@ -86,8 +86,7 @@ function isAbsoluteUrl(url: string): boolean {
 /** Resolve a relative path against the fileMap */
 function resolveRelative(
   url: string,
-  fileMap: Map<string, string>,
-  _prefix: string
+  fileMap: Map<string, string>
 ): string | null {
   const normalized = url.replace(/^\.{1,2}\//, "");
   const key = fileMap.get(normalized);
