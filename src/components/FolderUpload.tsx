@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
 import { uploadFile } from "@/api";
-import { pathToKey, rewriteRefs, buildFileMap, isBinary } from "@/lib/folderUtils";
+import { pathToKey, rewriteRefs, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
 import { toast } from "sonner";
 
@@ -46,12 +46,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     setFiles([]);           // replace, not append
     setReading(true);       // show loading indicator
 
-    console.log(`[FolderUpload] Selected folder: ${fileList.length} files`);
-    for (let diag = 0; diag < Math.min(fileList.length, 10); diag++) {
-      const f = fileList[diag] as File & { webkitRelativePath?: string };
-      console.log(`  [${diag}] ${f.webkitRelativePath || f.name} (${f.size} bytes)`);
-    }
-
     // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
     const effectivePrefix = prefix || genPrefix();
 
@@ -62,7 +56,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     // Safety timeout: if files aren't processed in 30s, force-exit reading state
     const safetyTimer = setTimeout(() => {
       if (processed < fileCount) {
-        console.warn(`[FolderUpload] Safety timeout: ${processed}/${fileCount} files processed`);
         toast.warning(`读取超时 (${processed}/${fileCount})，仅已读取的文件保留`);
         setFiles(items);
         setReading(false);
@@ -110,7 +103,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
         tryComplete();
       };
       reader.onabort = () => {
-        console.warn(`[FolderUpload] FileReader aborted: ${relPath}`);
         skipped.push(relPath);
         tryComplete();
       };
@@ -133,8 +125,14 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     // to avoid silent key mismatches between display and upload.
     const toUpload: UploadItem[] = files;
 
-    // Build file map & rewrite HTML refs
-    const fileMap = buildFileMap(prefix, toUpload);
+    // Build file map using the already-finalized keys from selection time.
+    const fileMap = new Map<string, string>();
+    for (const f of toUpload) {
+      const normalized = f.relativePath.replace(/^\.{1,2}\//, "");
+      fileMap.set(normalized, f.key);
+    }
+
+    // Rewrite HTML refs against the upload key map
     const rewritten: UploadItem[] = toUpload.map(f => {
       if (f.name.endsWith(".html") || f.name.endsWith(".htm")) {
         return {
