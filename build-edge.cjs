@@ -217,7 +217,7 @@ const lines = [
   "      await TEXTDB.put(kvKey('test_key'), String(count));",
   "      return new Response(JSON.stringify({status:'ok', count:count, message:'KV works!'}), {headers:{'Content-Type':'application/json', ...CORS}});",
   "    } catch (e) {",
-  "      return new Response(JSON.stringify({status:'error', error:e.message, stack:e.stack}), {status:500, headers:{'Content-Type':'application/json'}});",
+  "      return new Response(JSON.stringify({status:'error', error: e && e.message ? e.message : String(e)}), {status:500, headers:{'Content-Type':'application/json', ...CORS}});",
   "    }",
   "  }",
   "",

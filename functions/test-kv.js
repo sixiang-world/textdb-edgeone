@@ -23,9 +23,7 @@ export async function onRequestGet({ request }) {
   } catch (e) {
     return new Response(JSON.stringify({
       status: 'error',
-      error: e.message,
-      stack: e.stack,
-      TEXTDB_exists: typeof TEXTDB !== 'undefined'
+      error: e instanceof Error ? e.message : String(e)
     }), {
       status: 500,
       headers: {
