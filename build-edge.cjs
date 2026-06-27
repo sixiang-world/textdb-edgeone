@@ -85,7 +85,7 @@ const lines = [
   "      }",
   "      const MAX_VALUE_SIZE = 5 * 1024 * 1024; // 5 MiB（实测 KV 单值上限 5,242,880 B）",
   "      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);",
-  "      if (valueStr.length > MAX_VALUE_SIZE) {",
+  "      if (byteLen(valueStr) > MAX_VALUE_SIZE) {",
   "        return new Response(JSON.stringify({status:0, error:'Value too large (max 5 MiB)'}), {status:413, headers: {...CORS, 'Content-Type':'application/json'}});",
   "      }",
   "      const oldVal = await TEXTDB.get(kvKey(key));",
