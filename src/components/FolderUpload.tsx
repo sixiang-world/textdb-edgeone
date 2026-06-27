@@ -46,12 +46,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     setFiles([]);           // replace, not append
     setReading(true);       // show loading indicator
 
-    console.log(`[FolderUpload] Selected folder: ${fileList.length} files`);
-    for (let diag = 0; diag < Math.min(fileList.length, 10); diag++) {
-      const f = fileList[diag] as File & { webkitRelativePath?: string };
-      console.log(`  [${diag}] ${f.webkitRelativePath || f.name} (${f.size} bytes)`);
-    }
-
     // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
     const effectivePrefix = prefix || genPrefix();
 
@@ -62,7 +56,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     // Safety timeout: if files aren't processed in 30s, force-exit reading state
     const safetyTimer = setTimeout(() => {
       if (processed < fileCount) {
-        console.warn(`[FolderUpload] Safety timeout: ${processed}/${fileCount} files processed`);
         toast.warning(`读取超时 (${processed}/${fileCount})，仅已读取的文件保留`);
         setFiles(items);
         setReading(false);
@@ -110,7 +103,6 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
         tryComplete();
       };
       reader.onabort = () => {
-        console.warn(`[FolderUpload] FileReader aborted: ${relPath}`);
         skipped.push(relPath);
         tryComplete();
       };
