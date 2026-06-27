@@ -109,6 +109,7 @@ const lines = [
   "    }",
   "    if (request.method === 'DELETE') {",
   "      const key = path.split('/').pop();",
+  "      if (!key || !/^[0-9a-zA-Z_]{1,512}$/.test(key)) return new Response(JSON.stringify({status:0, error:'Invalid Key'}), {status:400, headers: {...CORS, 'Content-Type':'application/json'}});",
   "      const oldVal = await TEXTDB.get(kvKey(key));",
   "      await TEXTDB.delete(kvKey(key));",
   "      try { if (oldVal) { const s = '__stats_size__'; await TEXTDB.put(s, String(Math.max(0, Number(await TEXTDB.get(s) || '0') - byteLen(oldVal)))); } } catch (_) {}",
