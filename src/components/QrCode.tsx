@@ -8,7 +8,7 @@ interface QrCodeProps {
   size?: number;
 }
 
-export function QrCode({ url, size = 140 }: QrCodeProps) {
+export function QrCode({ url, size = 130 }: QrCodeProps) {
   const [dataUrl, setDataUrl] = useState("");
   const [qrError, setQrError] = useState(false);
 
@@ -45,35 +45,35 @@ export function QrCode({ url, size = 140 }: QrCodeProps) {
   if (qrError) {
     return (
       <div
-        className="rounded-md border bg-muted flex items-center justify-center text-sm text-muted-foreground"
+        className="rounded-lg border bg-muted/50 flex items-center justify-center text-xs text-muted-foreground"
         style={{ width: size, height: size }}
       >
-        二维码生成失败
+        生成失败
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {dataUrl ? (
-        <>
+      <div className="rounded-lg border bg-white p-1.5 shadow-xs">
+        {dataUrl ? (
           <img
             src={dataUrl}
             alt={`QR: ${url}`}
-            className="rounded-md border bg-white"
-            style={{ width: size, height: size }}
+            style={{ width: size - 12, height: size - 12 }}
+            className="block"
           />
-          <Button variant="ghost" size="xs" onClick={handleDownload}>
-            <Download className="size-3" />
-            下载
-          </Button>
-        </>
-      ) : (
-        <div
-          className="rounded-md border bg-muted animate-pulse"
-          style={{ width: size, height: size }}
-        />
-      )}
+        ) : (
+          <div
+            className="animate-pulse bg-muted rounded-sm"
+            style={{ width: size - 12, height: size - 12 }}
+          />
+        )}
+      </div>
+      <Button variant="ghost" size="xs" onClick={handleDownload} className="gap-1">
+        <Download className="size-3" />
+        下载
+      </Button>
     </div>
   );
 }

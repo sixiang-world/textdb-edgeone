@@ -15,6 +15,8 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  FileUp,
+  KeyRound,
   Loader2,
   Lock,
   Search,
@@ -90,10 +92,10 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [loadingOp, setLoadingOp] = useState<"write" | "read" | "delete" | null>(null);
   const [result, setResult] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
-  const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
-  const [jsUrl, setJsUrl] = useState("");            // /js/{key} JS 链接（仅 JS 内容）
-  const [readOnly, setReadOnly] = useState(false);   // 读取后锁定编辑
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [renderUrl, setRenderUrl] = useState("");
+  const [jsUrl, setJsUrl] = useState("");
+  const [readOnly, setReadOnly] = useState(false);
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -110,7 +112,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MiB（服务端限制）
+    const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       toast.error(`文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大支持 5 MiB`);
       e.target.value = "";
@@ -122,7 +124,6 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     reader.onload = () => {
       const text = reader.result as string;
       setValue(text);
-      // 上传后默认折叠（仅当内容足够长时）
       setCollapsed(getCollapsedPreview(text) !== null);
       if (!key) genKey();
     };
@@ -224,129 +225,176 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>写入 / 更新 / 读取</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="size-4 text-muted-foreground" />
+          写入 / 更新 / 读取
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-5">
+        {/* Key input row */}
         <div className="flex gap-2">
-          <Input
-            placeholder="my_data_key"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleRead()}
-          />
-          <Button variant="outline" size="icon" onClick={genKey}>
-            <Shuffle />
+          <div className="relative flex-1">
+            <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="my_data_key"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRead()}
+              className="pl-8"
+            />
+          </div>
+          <Button variant="outline" size="icon" onClick={genKey} title="随机生成 Key">
+            <Shuffle className="size-4" />
           </Button>
         </div>
-        {/* Password input — always visible */}
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2 items-center">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password (set on write, verify on update/delete)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="font-mono"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
-              type="button"
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </Button>
-          </div>
-          {password && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => setShowPwdOptions(!showPwdOptions)}
-                className="h-auto p-0 text-xs text-muted-foreground"
-                type="button"
-              >
-                {showPwdOptions ? "▼" : "▶"} Change / remove password
-              </Button>
-            </div>
-          )}
-          {showPwdOptions && password && (
-            <div className="flex flex-col gap-2 pl-2 border-l-2 border-muted">
+
+        {/* Password section */}
+        <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Lock className="size-3.5 text-muted-foreground shrink-0" />
+            <div className="relative flex-1">
               <Input
-                type="password"
-                placeholder="New password (leave empty to remove protection)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="font-mono text-sm"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password（写入时设置，更新/删除时验证）"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (!e.target.value) {
+                    setShowPwdOptions(false);
+                    setNewPassword("");
+                  }
+                }}
+                className="pl-3 pr-9 text-sm"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground transition"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-3.5" />
+                ) : (
+                  <Eye className="size-3.5" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {password && (
+            <div className="flex flex-col gap-2 pl-5">
+              <button
+                type="button"
+                onClick={() => setShowPwdOptions(!showPwdOptions)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition self-start"
+              >
+                {showPwdOptions ? (
+                  <ChevronDown className="size-3" />
+                ) : (
+                  <ChevronRightIcon className="size-3" />
+                )}
+                {showPwdOptions ? "收起" : "更换 / 移除密码"}
+              </button>
+
+              {showPwdOptions && (
+                <div className="flex flex-col gap-2 pl-2 border-l-2 border-muted-foreground/20">
+                  <Input
+                    type="password"
+                    placeholder="新密码（留空即移除密码保护）"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    当前密码验证通过后生效
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
-        {(() => {
-          const preview = getCollapsedPreview(value);
-          const canCollapse = preview !== null;
-          if (collapsed && canCollapse) {
+
+        {/* Content editor area */}
+        <div className="flex flex-col gap-2">
+          {readOnly && (
+            <div className="flex items-center gap-2 rounded-md border bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-muted-foreground">
+              <Lock className="size-3 text-amber-500" />
+              <span>只读模式 — </span>
+              <button
+                type="button"
+                onClick={() => setReadOnly(false)}
+                className="font-medium text-foreground underline underline-offset-2 hover:text-primary transition"
+              >
+                点击解锁
+              </button>
+              <span>后可编辑</span>
+            </div>
+          )}
+
+          {(() => {
+            const preview = getCollapsedPreview(value);
+            const canCollapse = preview !== null;
+
+            if (collapsed && canCollapse) {
+              return (
+                <div className="rounded-lg border bg-muted/30 font-mono text-sm">
+                  <pre className="p-3 whitespace-pre-wrap break-all overflow-auto max-h-48 leading-relaxed text-xs">
+                    {preview}
+                  </pre>
+                  <div className="border-t px-3 py-1.5 flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">
+                      {value.split("\n").length} 行
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsed(false)}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition"
+                    >
+                      <ChevronDown className="size-3" />
+                      展开全部
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <div className="rounded-md border bg-muted/30 font-mono text-sm">
-                <pre className="p-3 whitespace-pre-wrap break-all overflow-auto max-h-72 leading-relaxed">
-                  {preview}
-                </pre>
-                <div className="border-t px-3 py-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCollapsed(false)}
-                  >
-                    <ChevronDown />
-                    展开全部
-                  </Button>
+              <div className="flex flex-col gap-2">
+                <Textarea
+                  placeholder="在此输入文本内容..."
+                  rows={5}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="font-mono text-sm"
+                  readOnly={readOnly}
+                />
+                <div className="flex items-center justify-between">
+                  {value && (
+                    <span className="text-[11px] text-muted-foreground">
+                      {value.length.toLocaleString()} 字符
+                      · {value.split("\n").length} 行
+                    </span>
+                  )}
+                  {canCollapse && (
+                    <button
+                      type="button"
+                      onClick={() => setCollapsed(true)}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition"
+                    >
+                      <ChevronUp className="size-3" />
+                      折叠
+                    </button>
+                  )}
                 </div>
               </div>
             );
-          }
-          return (
-            <div className="flex flex-col gap-2">
-              {readOnly && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReadOnly(false)}
-                    className="gap-1.5"
-                  >
-                    <Lock className="size-3.5" />
-                    只读模式
-                  </Button>
-                  <span>— 点击解锁后可编辑</span>
-                </div>
-              )}
-              <Textarea
-                placeholder="在此输入文本内容..."
-                rows={5}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                className="font-mono"
-                readOnly={readOnly}
-              />
-              {canCollapse && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setCollapsed(true)}
-                >
-                  <ChevronUp />
-                  折叠预览
-                </Button>
-              )}
-            </div>
-          );
-        })()}
+          })()}
+        </div>
 
-        <div className="flex flex-col gap-2">
-          <Button variant="outline" className="relative">
-            <Upload />
+        {/* File upload */}
+        <div className="flex flex-col gap-1.5">
+          <Button variant="outline" size="sm" className="relative w-full justify-start gap-2">
+            <FileUp className="size-4" />
             上传文本文件
             <input
               type="file"
@@ -355,93 +403,151 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               onChange={handleFileUpload}
             />
           </Button>
-          <p className="text-xs text-muted-foreground">
-            支持 HTML/CSS/JS/MD 等文本文件，可在文件对话框切换"所有文件"
+          <p className="text-[11px] text-muted-foreground px-1">
+            支持 HTML / CSS / JS / MD 等文本格式，可在对话框切换「所有文件」
           </p>
         </div>
 
+        {/* Action buttons */}
         <div className="flex gap-2">
-          <Button onClick={handleWrite} disabled={loadingOp !== null}>
-            {loadingOp === "write" ? <Loader2 className="animate-spin" /> : <Upload />}
+          <Button
+            onClick={handleWrite}
+            disabled={loadingOp !== null}
+            className="flex-1"
+          >
+            {loadingOp === "write" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Upload className="size-4" />
+            )}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null}>
-            {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
+          <Button
+            variant="secondary"
+            onClick={handleRead}
+            disabled={loadingOp !== null}
+            className="flex-1"
+          >
+            {loadingOp === "read" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Search className="size-4" />
+            )}
             读取
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null}>
-            {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
-            删除此 Key
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={loadingOp !== null}
+            className="flex-1"
+          >
+            {loadingOp === "delete" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+            删除
           </Button>
         </div>
 
-        {/* 源链接（始终显示） */}
+        {/* URL results */}
         {sourceUrl && (
-          <div className="rounded-md border bg-muted p-4 flex items-center gap-3">
-            <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+          <div className="rounded-lg border bg-card p-3 flex items-center gap-3 shadow-xs">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+              <ExternalLink className="size-3.5 text-primary" />
+            </div>
             <a
               href={sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-mono text-foreground underline underline-offset-4 break-all flex-1"
+              className="text-sm font-mono text-foreground underline underline-offset-2 decoration-muted-foreground/30 hover:decoration-foreground/60 break-all flex-1 min-w-0"
             >
               {sourceUrl}
             </a>
-            <Button variant="ghost" size="icon" onClick={() => copyUrl(sourceUrl)}>
-              <Copy className="size-4" />
+            <Button variant="ghost" size="icon-xs" onClick={() => copyUrl(sourceUrl)}>
+              <Copy className="size-3.5" />
             </Button>
           </div>
         )}
 
-        {/* 二维码 */}
+        {/* QR code */}
         {sourceUrl && (
-          <div className="flex justify-center pt-1">
+          <div className="flex justify-center">
             <QrCode url={sourceUrl} />
           </div>
         )}
 
-        {/* JS 链接（仅 JS 内容时显示） */}
+        {/* JS link */}
         {jsUrl && (
-          <div className="rounded-md border bg-muted p-4 flex items-center gap-3">
-            <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+          <div className="rounded-lg border bg-card p-3 flex items-center gap-3 shadow-xs">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-amber-100 dark:bg-amber-900/30">
+              <ExternalLink className="size-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
             <a
               href={jsUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-mono text-foreground underline underline-offset-4 break-all flex-1"
+              className="text-sm font-mono text-foreground underline underline-offset-2 decoration-muted-foreground/30 hover:decoration-foreground/60 break-all flex-1 min-w-0"
             >
               {jsUrl}
             </a>
-            <Button variant="ghost" size="icon" onClick={() => copyUrl(jsUrl)}>
-              <Copy className="size-4" />
+            <Button variant="ghost" size="icon-xs" onClick={() => copyUrl(jsUrl)}>
+              <Copy className="size-3.5" />
             </Button>
           </div>
         )}
 
-        {/* HTML 渲染链接（仅 HTML 内容时显示） */}
+        {/* HTML render link */}
         {renderUrl && (
-          <div className="rounded-md border bg-primary/5 p-4 flex items-center gap-3">
-            <ExternalLink className="size-4 shrink-0 text-primary" />
+          <div className="rounded-lg border bg-card p-3 flex items-center gap-3 shadow-xs">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-100 dark:bg-emerald-900/30">
+              <ExternalLink className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            </div>
             <a
               href={renderUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-mono text-primary underline underline-offset-4 break-all flex-1"
+              className="text-sm font-mono text-foreground underline underline-offset-2 decoration-muted-foreground/30 hover:decoration-foreground/60 break-all flex-1 min-w-0"
             >
               {renderUrl}
             </a>
-            <Button variant="ghost" size="icon" onClick={() => copyUrl(renderUrl)}>
-              <Copy className="size-4" />
+            <Button variant="ghost" size="icon-xs" onClick={() => copyUrl(renderUrl)}>
+              <Copy className="size-3.5" />
             </Button>
           </div>
         )}
 
+        {/* Result JSON */}
         {result && (
-          <pre className="rounded-md border bg-muted p-4 text-sm font-mono break-all max-h-48 overflow-auto">
-            {result}
-          </pre>
+          <details className="group">
+            <summary className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition">
+              <ChevronDown className="size-3 transition group-open:rotate-180" />
+              返回结果
+            </summary>
+            <pre className="mt-2 rounded-lg border bg-muted/30 p-3 text-xs font-mono break-all max-h-48 overflow-auto leading-relaxed">
+              {result}
+            </pre>
+          </details>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Inline component to avoid pulling in a full icon import */
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
   );
 }

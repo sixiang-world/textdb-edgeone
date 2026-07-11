@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@plugin "tw-animate-css";
 
 @theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+
   --color-ring: oklch(0.708 0 0);
+}
+
+/* Subtle radial gradient for depth */
+body {
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -12%,
+    oklch(0.93 0.02 260 / 0.5) 0%,
+    transparent 60%
+  );
+  background-attachment: fixed;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -12%,
+      oklch(0.2 0.03 260 / 0.25) 0%,
+      transparent 60%
+    );
+  }
 }
