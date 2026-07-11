@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronUp, Copy, ExternalLink, FileUp, Files, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
 import { uploadFile } from "@/api";
 import { pathToKey, rewriteRefs, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
@@ -19,12 +19,12 @@ const BASE = location.origin;
 export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [prefix, setPrefix] = useState("");
   const [files, setFiles] = useState<UploadItem[]>([]);
-  const [reading, setReading] = useState(false);
+  const [reading, setReading] = useState(false);      // loading indicator while FileReader is working
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState<UploadResult[]>([]);
   const [entryUrl, setEntryUrl] = useState("");
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(true);    // file list collapsed by default
   const inputRef = useRef<HTMLInputElement>(null);
 
   function genPrefix() {
@@ -32,25 +32,28 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     let p = "site_";
     for (let i = 0; i < 8; i++) p += c[Math.floor(Math.random() * c.length)];
     setPrefix(p);
-    return p;
+    return p;  // return for immediate use in callbacks (setState is async)
   }
 
   function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    const fileCount = fileList.length;
+    const fileCount = fileList.length;  // capture for TS narrowing in closures
 
+    // Reset previous upload state
     setResults([]);
     setEntryUrl("");
-    setFiles([]);
-    setReading(true);
+    setFiles([]);           // replace, not append
+    setReading(true);       // show loading indicator
 
+    // Capture effective prefix NOW (React setState is async, callbacks need the correct value)
     const effectivePrefix = prefix || genPrefix();
 
     const items: UploadItem[] = [];
     const skipped: string[] = [];
     let processed = 0;
 
+    // Safety timeout: if files aren't processed in 30s, force-exit reading state
     const safetyTimer = setTimeout(() => {
       if (processed < fileCount) {
         toast.warning(`读取超时 (${processed}/${fileCount})，仅已读取的文件保留`);
@@ -72,7 +75,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     }
 
     for (let i = 0; i < fileCount; i++) {
-      const f = fileList[i] as File & { webkitRelativePath?: string };
+      const f = fileList![i] as File & { webkitRelativePath?: string };
       const relPath = f.webkitRelativePath || f.name;
 
       const reader = new FileReader();
@@ -116,14 +119,20 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     setResults([]);
     setEntryUrl("");
 
+    // Use keys as computed at selection time (not recomputed with current prefix).
+    // This ensures the file list display matches what gets uploaded.
+    // If the user changed prefix after selection, those changes are intentionally ignored
+    // to avoid silent key mismatches between display and upload.
     const toUpload: UploadItem[] = files;
 
+    // Build file map using the already-finalized keys from selection time.
     const fileMap = new Map<string, string>();
     for (const f of toUpload) {
       const normalized = f.relativePath.replace(/^\.{1,2}\//, "");
       fileMap.set(normalized, f.key);
     }
 
+    // Rewrite HTML refs against the upload key map
     const rewritten: UploadItem[] = toUpload.map(f => {
       if (f.name.endsWith(".html") || f.name.endsWith(".htm")) {
         return {
@@ -134,6 +143,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
       return f;
     });
 
+    // Upload one-by-one (respect rate limits, track progress)
     const allResults: UploadResult[] = [];
     for (let i = 0; i < rewritten.length; i++) {
       const res = await uploadFile(rewritten[i]);
@@ -149,6 +159,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     toast.success(`上传完成: ${succeeded} 成功${failed > 0 ? `, ${failed} 失败` : ""}`);
     onStatsRefresh?.();
 
+    // Find entry point (index.html)
     const entry = rewritten.find(
       f => f.relativePath.endsWith("/index.html") || f.relativePath === "index.html"
     );
@@ -173,35 +184,29 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FolderOpen className="size-4 text-muted-foreground" />
-          文件夹上传
-        </CardTitle>
+        <CardTitle>文件夹上传</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {/* Prefix + folder picker */}
+        {/* Project prefix + folder picker */}
         <div className="flex gap-2 items-center">
-          <div className="relative flex-1">
-            <Input
-              placeholder="项目前缀 (如 mysite)"
-              value={prefix}
-              onChange={(e) => setPrefix(e.target.value)}
-              className="pl-3"
-            />
-          </div>
-          <Button variant="outline" size="icon" onClick={genPrefix} title="随机生成前缀">
+          <Input
+            placeholder="项目前缀 (如 mysite)"
+            value={prefix}
+            onChange={(e) => setPrefix(e.target.value)}
+            className="flex-1"
+          />
+          <Button variant="outline" size="icon" onClick={genPrefix} title="随机生成">
             <Shuffle className="size-4" />
           </Button>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex gap-2 items-center">
           <Button
             variant="outline"
-            size="sm"
-            className="relative w-full justify-start gap-2"
+            className="relative"
             disabled={uploading}
           >
-            <FolderOpen className="size-4" />
+            <FolderOpen />
             选择文件夹
             <input
               ref={inputRef}
@@ -213,73 +218,60 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
               onChange={handleFolderSelect}
             />
           </Button>
-          <p className="text-[11px] text-muted-foreground px-1">
-            建议扁平结构（css/、js/ 直接放根目录），自动重写 HTML 引用路径
-          </p>
+          <span className="text-xs text-muted-foreground">
+            选择包含 HTML/CSS/JS 的文件夹，建议扁平结构（如 css/、js/ 直接放根目录）
+          </span>
         </div>
 
-        {/* Loading indicator */}
+        {/* File list preview — collapsed summary bar by default */}
         {reading && (
-          <div className="rounded-lg border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground flex items-center gap-2">
+          <div className="rounded-md border bg-muted p-3 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="size-4 animate-spin" />
             正在读取文件...
           </div>
         )}
-
-        {/* File list preview */}
         {files.length > 0 && (
-          <div className="rounded-lg border bg-card overflow-hidden">
+          <div className="rounded-md border bg-muted p-3 text-sm">
             {/* Summary bar */}
-            <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center justify-between">
               <button
                 onClick={() => setCollapsed(!collapsed)}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
               >
-                {collapsed ? (
-                  <ChevronDown className="size-3.5" />
-                ) : (
-                  <ChevronUp className="size-3.5" />
-                )}
-                <Files className="size-3.5" />
-                <span>{files.length} 个文件</span>
+                {collapsed ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+                <span>📄 {files.length} 个文件</span>
               </button>
-              {!uploading && (
-                <button
-                  onClick={() => setFiles([])}
-                  className="text-xs text-destructive hover:underline"
-                >
-                  清空
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!uploading && (
+                  <button
+                    onClick={() => setFiles([])}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    清空
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Expanded list */}
+            {/* Expanded file list */}
             {!collapsed && (
-              <div className="border-t max-h-60 overflow-auto">
+              <div className="mt-2 font-mono text-xs max-h-48 overflow-auto">
                 {files.map((f, i) => (
-                  <div
-                    key={f.relativePath}
-                    className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-border/40 last:border-0 hover:bg-muted/30 transition"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <FileUp className="size-3 shrink-0 text-muted-foreground" />
-                      <span className="truncate text-muted-foreground">
-                        {f.relativePath}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <code className="text-[10px] text-muted-foreground bg-muted/50 rounded px-1 py-0.5">
-                        {f.key}
-                      </code>
-                      {!uploading && (
-                        <button
-                          onClick={() => removeFile(i)}
-                          className="text-destructive hover:underline"
-                        >
-                          移除
-                        </button>
-                      )}
-                    </div>
+                  <div key={f.relativePath} className="flex items-center justify-between py-1 border-t border-border/50">
+                    <span className="text-muted-foreground truncate flex-1">
+                      📄 {f.relativePath}
+                    </span>
+                    <span className="text-muted-foreground shrink-0 ml-2">
+                      → {f.key}
+                    </span>
+                    {!uploading && (
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="ml-2 text-destructive hover:underline shrink-0"
+                      >
+                        移除
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -289,7 +281,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
         {/* Upload button */}
         {files.length > 0 && !uploading && !results.length && (
-          <Button onClick={handleUpload}>
+          <Button onClick={handleUpload} className="w-full">
             <Upload />
             上传 {files.length} 个文件
           </Button>
@@ -297,7 +289,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
         {/* Upload progress */}
         {uploading && (
-          <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
               上传中... {progress.done}/{progress.total}
@@ -308,23 +300,21 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
         {/* Results summary */}
         {results.length > 0 && (
-          <div className="rounded-lg border p-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium">
+          <div className="rounded-md border p-4 text-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span>
                 ✅ {results.filter(r => r.success).length} 成功
+                {results.filter(r => !r.success).length > 0 && (
+                  <span className="text-destructive ml-2">
+                    ❌ {results.filter(r => !r.success).length} 失败
+                  </span>
+                )}
               </span>
-              {results.filter(r => !r.success).length > 0 && (
-                <span className="font-medium text-destructive ml-1">
-                  ❌ {results.filter(r => !r.success).length} 失败
-                </span>
-              )}
             </div>
             {results.filter(r => !r.success).length > 0 && (
-              <div className="mt-2 text-xs text-muted-foreground max-h-24 overflow-auto font-mono">
+              <div className="text-xs text-muted-foreground max-h-24 overflow-auto">
                 {results.filter(r => !r.success).map((r, i) => (
-                  <div key={i} className="py-0.5">
-                    {r.key}: {r.error}
-                  </div>
+                  <div key={i}>{r.key}: {r.error}</div>
                 ))}
               </div>
             )}
@@ -333,20 +323,18 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
         {/* Entry link */}
         {entryUrl && (
-          <div className="rounded-lg border bg-card p-3 flex items-center gap-3 shadow-xs">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-100 dark:bg-emerald-900/30">
-              <ExternalLink className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-            </div>
+          <div className="rounded-md border bg-primary/5 p-4 flex items-center gap-3">
+            <ExternalLink className="size-4 shrink-0 text-primary" />
             <a
               href={entryUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-mono text-foreground underline underline-offset-2 decoration-muted-foreground/30 hover:decoration-foreground/60 break-all flex-1 min-w-0"
+              className="text-sm font-mono text-primary underline underline-offset-4 break-all flex-1"
             >
               {entryUrl}
             </a>
-            <Button variant="ghost" size="icon-xs" onClick={() => copyUrl(entryUrl)}>
-              <Copy className="size-3.5" />
+            <Button variant="ghost" size="icon" onClick={() => copyUrl(entryUrl)}>
+              <Copy className="size-4" />
             </Button>
           </div>
         )}
