@@ -33,42 +33,61 @@ const endpoints = [
 const params = [
   { name: "key", required: true, desc: "文本标识，仅支持字母、数字、下划线，最长 512 字符" },
   { name: "value", required: false, desc: "文本数据，最大 5 MiB。留空则删除" },
+  { name: "password", required: false, desc: "密码。首次写入时设置，后续更新/删除需传入验证" },
+  { name: "new_password", required: false, desc: "新密码。传入正确 password 后可改密码或置空移除保护" },
 ];
 
-const curlCode = `# 写入
+const curlCode = `# 写入（无密码）
 curl -X POST "${B}/update/" \\
   -d "key=mykey&value=hello world"
 
-# 读取
+# 写入（带密码）
+curl -X POST "${B}/update/" \\
+  -d "key=mykey&value=hello world&password=abc123"
+
+# 更新（需密码验证）
+curl -X POST "${B}/update/" \\
+  -d "key=mykey&value=new content&password=abc123"
+
+# 读取（无需密码）
 curl "${B}/mykey"
 
-# 删除
-curl -X DELETE "${B}/mykey"`;
+# 删除（无密码）
+curl -X DELETE "${B}/mykey"
+
+# 删除（有密码）
+curl -X DELETE "${B}/mykey" \\
+  -H "X-Password: abc123"`;
 
 const pyCode = `import requests
 
-# 写入
+# 写入（带密码）
 requests.post("${B}/update/",
-  data={"key": "mykey", "value": "hello world"})
+  data={"key": "mykey", "value": "hello world", "password": "abc123"})
 
 # 读取
 print(requests.get("${B}/mykey").text)
 
-# 删除
-requests.delete("${B}/mykey")`;
+# 删除（有密码）
+requests.post("${B}/update/",
+  data={"key": "mykey", "value": "", "password": "abc123"})`;
 
-const jsCode = `// 写入
+const jsCode = `// 写入（带密码）
 await fetch("${B}/update/", {
   method: "POST",
   headers: {"Content-Type": "application/x-www-form-urlencoded"},
-  body: "key=mykey&value=hello world"
+  body: "key=mykey&value=hello world&password=abc123"
 });
 
 // 读取
 const text = await (await fetch("${B}/mykey")).text();
 
-// 删除
-await fetch("${B}/mykey", {method: "DELETE"});`;
+// 删除（有密码）
+await fetch("${B}/update/", {
+  method: "POST",
+  headers: {"Content-Type": "application/x-www-form-urlencoded"},
+  body: "key=mykey&value=&password=abc123"
+});`;
 
 function CodeBlock({ code, label }: { code: string; label: string }) {
   return (
@@ -173,7 +192,7 @@ export function ApiDocs() {
         <CardContent>
           <ul className="text-sm text-muted-foreground flex flex-col gap-2 list-disc pl-4">
             <li>读取不限次数，每个 IP 每日写入/删除操作限 500 次</li>
-            <li>数据无密码保护，建议使用随机 Key</li>
+            <li>写入时可设置密码保护，后续更新/删除需验证密码，读取始终不需要密码</li>
             <li>1 年未更新的记录会自动删除</li>
             <li>全程支持 CORS 跨域请求</li>
           </ul>
