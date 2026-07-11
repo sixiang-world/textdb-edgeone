@@ -16,20 +16,29 @@ export async function getStats(signal?: AbortSignal): Promise<Stats> {
   return data.data;
 }
 
-export async function writeData(key: string, value: string) {
+export async function writeData(key: string, value: string, password?: string, newPassword?: string) {
+  const body = new URLSearchParams();
+  body.set('key', key);
+  body.set('value', value);
+  if (password) body.set('password', password);
+  if (newPassword !== undefined) body.set('new_password', newPassword);
   const res = await fetch(`${BASE}/update/`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`,
+    body: body.toString(),
   });
   return res.json();
 }
 
-export async function deleteData(key: string) {
+export async function deleteData(key: string, password?: string) {
+  const body = new URLSearchParams();
+  body.set('key', key);
+  body.set('value', '');
+  if (password) body.set('password', password);
   const res = await fetch(`${BASE}/update/`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `key=${encodeURIComponent(key)}&value=`,
+    body: body.toString(),
   });
   return res.json();
 }
