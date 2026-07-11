@@ -239,8 +239,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           </Button>
         </div>
         {/* Password input — always visible */}
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center">
             <Input
               type={showPassword ? "text" : "password"}
               placeholder="Password (set on write, verify on update/delete)"
@@ -257,31 +256,6 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </Button>
-          </div>
-          {password && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => setShowPwdOptions(!showPwdOptions)}
-                className="h-auto p-0 text-xs text-muted-foreground"
-                type="button"
-              >
-                {showPwdOptions ? "▼" : "▶"} Change / remove password
-              </Button>
-            </div>
-          )}
-          {showPwdOptions && password && (
-            <div className="flex flex-col gap-2 pl-2 border-l-2 border-muted">
-              <Input
-                type="password"
-                placeholder="New password (leave empty to remove protection)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="font-mono text-sm"
-              />
-            </div>
-          )}
         </div>
         {(() => {
           const preview = getCollapsedPreview(value);
@@ -360,19 +334,42 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={handleWrite} disabled={loadingOp !== null}>
+        <div className="flex gap-2 flex-wrap items-center">
+          <Button onClick={handleWrite} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
             {loadingOp === "write" ? <Loader2 className="animate-spin" /> : <Upload />}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null}>
+          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
             {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
             读取
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null}>
+          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
             {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
+          {password && (
+            <div className="shrink-0 sm:max-w-[220px] w-full sm:w-auto">
+              {showPwdOptions ? (
+                <Input
+                  type="password"
+                  placeholder="New password (leave empty to remove protection)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="font-mono text-sm h-8"
+                />
+              ) : (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => setShowPwdOptions(true)}
+                  className="h-8 px-0 text-xs text-muted-foreground"
+                  type="button"
+                >
+                  ▶ Change / remove password
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 源链接（始终显示） */}
