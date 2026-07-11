@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-
+@plugin "tw-animate-css";
 
 /* Geist Variable font — Vite resolves this from node_modules */
 @import "@fontsource-variable/geist";
