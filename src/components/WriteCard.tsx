@@ -140,7 +140,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setJsUrl("");
     try {
       const pwd = password || undefined;
-      const npwd = showPwdOptions ? (newPassword !== undefined ? newPassword : undefined) : undefined;
+      const npwd = showPwdOptions ? newPassword : undefined;
       const d = await writeData(key, value, pwd, npwd);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
@@ -271,7 +271,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               </Button>
             </div>
           )}
-          {showPwdOptions && (
+          {showPwdOptions && password && (
             <div className="flex flex-col gap-2 pl-2 border-l-2 border-muted">
               <Input
                 type="password"
