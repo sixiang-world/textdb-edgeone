@@ -13,6 +13,8 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   Loader2,
   Lock,
   Search,
@@ -92,6 +94,10 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
   const [jsUrl, setJsUrl] = useState("");            // /js/{key} JS 链接（仅 JS 内容）
   const [readOnly, setReadOnly] = useState(false);   // 读取后锁定编辑
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPwdOptions, setShowPwdOptions] = useState(false);
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -133,7 +139,9 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setRenderUrl("");
     setJsUrl("");
     try {
-      const d = await writeData(key, value);
+      const pwd = password || undefined;
+      const npwd = showPwdOptions ? (newPassword !== undefined ? newPassword : undefined) : undefined;
+      const d = await writeData(key, value, pwd, npwd);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
         setSourceUrl(`${BASE}/${key}`);
@@ -161,7 +169,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setRenderUrl("");
     setJsUrl("");
     try {
-      const d = await deleteData(key);
+      const d = await deleteData(key, password || undefined);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
         toast.success("已删除");
@@ -229,6 +237,51 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           <Button variant="outline" size="icon" onClick={genKey}>
             <Shuffle />
           </Button>
+        </div>
+        {/* Password input — always visible */}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 items-center">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password (set on write, verify on update/delete)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="font-mono"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+              type="button"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </Button>
+          </div>
+          {password && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => setShowPwdOptions(!showPwdOptions)}
+                className="h-auto p-0 text-xs text-muted-foreground"
+                type="button"
+              >
+                {showPwdOptions ? "▼" : "▶"} Change / remove password
+              </Button>
+            </div>
+          )}
+          {showPwdOptions && (
+            <div className="flex flex-col gap-2 pl-2 border-l-2 border-muted">
+              <Input
+                type="password"
+                placeholder="New password (leave empty to remove protection)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="font-mono text-sm"
+              />
+            </div>
+          )}
         </div>
         {(() => {
           const preview = getCollapsedPreview(value);
