@@ -222,6 +222,9 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          密码将应用于本次上传的所有文件。空白 = 不设密码保护。
+        </p>
 
         <div className="flex gap-2 items-center">
           <Button
