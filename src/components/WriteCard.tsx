@@ -339,61 +339,62 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
-          {/* Password input — 按钮右侧 */}
-          <div className="flex gap-2 items-center flex-1 sm:flex-none sm:ml-auto">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="font-mono h-9 min-w-[140px]"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
-              type="button"
-              className="size-9"
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </Button>
-          </div>
-          {/* Change / remove password */}
-          {password && (
-            <div className="flex gap-2 items-center shrink-0">
-              {showPwdOptions ? (
-                <>
-                  <Input
-                    type="password"
-                    placeholder="New password (leave empty to remove protection)"
-                    value={newPassword}
-                    onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
-                    className="font-mono text-sm h-9 min-w-[120px]"
-                  />
+          {/* 右侧密码控件组（密码输入 + 修改/移除） */}
+          <div className="flex gap-2 items-center flex-1 sm:flex-none sm:ml-auto flex-nowrap">
+            <div className="flex gap-2 items-center">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="font-mono h-9 min-w-[120px]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                type="button"
+                className="size-9"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </Button>
+            </div>
+            {password && (
+              <div className="flex gap-2 items-center">
+                {showPwdOptions ? (
+                  <>
+                    <Input
+                      type="password"
+                      placeholder="新密码（留空则移除保护）"
+                      value={newPassword}
+                      onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
+                      className="font-mono text-sm h-9 min-w-[120px]"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
+                      className="h-9 text-xs text-muted-foreground whitespace-nowrap"
+                      type="button"
+                    >
+                      ✕ 取消
+                    </Button>
+                  </>
+                ) : (
                   <Button
-                    variant="ghost"
+                    variant="link"
                     size="sm"
-                    onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
-                    className="h-9 text-xs text-muted-foreground whitespace-nowrap"
+                    onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
+                    className="h-9 px-1 text-xs text-muted-foreground whitespace-nowrap"
                     type="button"
                   >
-                    ✕ 取消
+                    ▶ 修改 / 移除密码
                   </Button>
-                </>
-              ) : (
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
-                  className="h-9 px-1 text-xs text-muted-foreground whitespace-nowrap"
-                  type="button"
-                >
-                  ▶ Change / remove password
-                </Button>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 源链接（始终显示） */}
