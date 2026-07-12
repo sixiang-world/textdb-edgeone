@@ -249,25 +249,6 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             <Shuffle />
           </Button>
         </div>
-        {/* Password input — always visible */}
-        <div className="flex gap-2 items-center">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password (set on write, verify on update/delete)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="font-mono"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
-              type="button"
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </Button>
-        </div>
         {(() => {
           const preview = getCollapsedPreview(value);
           const canCollapse = preview !== null;
@@ -358,6 +339,26 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
+          {/* Password input — 按钮右侧 */}
+          <div className="flex gap-2 items-center flex-1 sm:flex-none sm:ml-auto">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="font-mono h-9 min-w-[140px]"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+              type="button"
+              className="size-9"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </Button>
+          </div>
         </div>
 
         {/* Change / remove password — 独立在按钮栏之外 */}
