@@ -8,8 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Copy,
   ExternalLink,
@@ -98,7 +100,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPwdOptions, setShowPwdOptions] = useState(false);
-  const [newPasswordTouched, setNewPasswordTouched] = useState(false); // 避免打开面板但未输入时意外移除密码
+  const [removePassword, setRemovePassword] = useState(false);
+  const [newPasswordTouched, setNewPasswordTouched] = useState(false);
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -141,7 +144,12 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setJsUrl("");
     try {
       const pwd = password || undefined;
-      const npwd = (showPwdOptions && newPasswordTouched) ? newPassword : undefined;
+      let npwd: string | undefined;
+      if (removePassword) {
+        npwd = '';
+      } else if (showPwdOptions && newPasswordTouched && newPassword.length > 0) {
+        npwd = newPassword;
+      }
       const d = await writeData(key, value, pwd, npwd);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
@@ -156,6 +164,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
+        setRemovePassword(false);
         toast.success("写入成功");
         onStatsRefresh?.();
       } else toast.error(d.error || "写入失败");
@@ -183,6 +192,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setShowPassword(false);
+        setRemovePassword(false);
         toast.success("已删除");
         onStatsRefresh?.();
       } else toast.error(d.error || "删除失败");
@@ -310,7 +320,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
           );
         })()}
 
-        <div className="flex flex-col gap-2">
+        {/* Upload + Password row */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="relative">
             <Upload />
             上传文本文件
@@ -321,10 +332,78 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               onChange={handleFileUpload}
             />
           </Button>
-          <p className="text-xs text-muted-foreground">
-            支持 HTML/CSS/JS/MD 等文本文件，可在文件对话框切换"所有文件"
-          </p>
+
+          {/* Password input */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="font-mono h-8 w-24 sm:w-[110px] rounded-r-none"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                type="button"
+                className="h-8 w-8 rounded-l-none border-l-0"
+              >
+                {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              </Button>
+            </div>
+
+            {/* Expand button — only visible when password has content */}
+            {password && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => { setShowPwdOptions(!showPwdOptions); if (!showPwdOptions) setNewPasswordTouched(false); }}
+                type="button"
+                className="h-8 w-8"
+              >
+                <ChevronRight className={cn("size-4 transition-transform", showPwdOptions && "rotate-90")} />
+              </Button>
+            )}
+          </div>
+
+          {/* Expanded: new password + remove */}
+          {password && showPwdOptions && (
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="password"
+                placeholder="新密码"
+                value={newPassword}
+                onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
+                className="font-mono h-8 w-24 sm:w-[110px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setRemovePassword(true); setShowPwdOptions(false); }}
+                className="h-8 text-xs whitespace-nowrap text-destructive border-destructive/30 hover:bg-destructive/10"
+                type="button"
+              >
+                移除密码
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
+                className="h-8 text-xs text-muted-foreground"
+                type="button"
+              >
+                ✕ 取消
+              </Button>
+            </div>
+          )}
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          支持 HTML/CSS/JS/MD 等文本文件，可在文件对话框切换"所有文件"
+        </p>
 
         <div className="flex gap-2 flex-wrap items-center">
           <Button onClick={handleWrite} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
@@ -339,62 +418,6 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
-          {/* 右侧密码控件组（密码输入 + 修改/移除） */}
-          <div className="flex gap-2 items-center flex-1 sm:flex-none sm:ml-auto flex-nowrap">
-            <div className="flex gap-2 items-center min-w-0">
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder="密码"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="font-mono h-9 w-20 sm:w-[110px]"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-                type="button"
-                className="size-9 shrink-0"
-              >
-                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </Button>
-            </div>
-            {password && (
-              <div className="flex gap-2 items-center min-w-0">
-                {showPwdOptions ? (
-                  <>
-                    <Input
-                      type="password"
-                      placeholder="新密码"
-                      value={newPassword}
-                      onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
-                      className="font-mono text-sm h-9 w-20 sm:w-[110px]"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
-                      className="h-9 text-xs text-muted-foreground whitespace-nowrap shrink-0"
-                      type="button"
-                    >
-                      ✕ 取消
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
-                    className="h-9 px-1 text-xs text-muted-foreground whitespace-nowrap shrink-0"
-                    type="button"
-                  >
-                    ▶ 修改 / 移除密码
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* 源链接（始终显示） */}
