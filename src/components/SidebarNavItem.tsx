@@ -26,7 +26,7 @@ export function SidebarNavItem({
     >
       <Icon className="size-5" />
       {/* CSS hover label — shows to the right of the icon */}
-      <span className="absolute left-full ml-2 hidden whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-sm group-hover:block">
+      <span className="absolute left-full ml-2 z-50 hidden whitespace-nowrap rounded-md border bg-background px-2 py-1 text-xs text-popover-foreground shadow-sm group-hover:block">
         {label}
       </span>
     </button>
