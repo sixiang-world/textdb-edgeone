@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { WriteCard } from "@/components/WriteCard";
-import { ApiDocs } from "@/components/ApiDocs";
-import { Changelog } from "@/components/Changelog";
-import { FolderUpload } from "@/components/FolderUpload";
+import { OperatePage } from "@/components/pages/OperatePage";
+import { FolderPage } from "@/components/pages/FolderPage";
+import { ApiDocsPage } from "@/components/pages/ApiDocsPage";
+import { ChangelogPage } from "@/components/pages/ChangelogPage";
 import { MdRenderer } from "@/components/MdRenderer";
 import { Toaster } from "@/components/ui/sonner";
 import { Layout, type NavItem } from "@/components/Layout";
@@ -36,13 +36,13 @@ export default function App() {
   const renderContent = () => {
     switch (activeNav) {
       case "operate":
-        return <WriteCard onStatsRefresh={onStatsRefresh} />;
+        return <OperatePage onStatsRefresh={onStatsRefresh} />;
       case "folder":
-        return <FolderUpload onStatsRefresh={onStatsRefresh} />;
+        return <FolderPage onStatsRefresh={onStatsRefresh} />;
       case "api":
-        return <ApiDocs />;
+        return <ApiDocsPage />;
       case "changelog":
-        return <Changelog />;
+        return <ChangelogPage />;
     }
   };
 
