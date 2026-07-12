@@ -1,19 +1,12 @@
-import { ExternalLink } from "lucide-react";
-import { Hash, HardDrive, PencilLine } from "lucide-react";
+import { ExternalLink, Hash, HardDrive, PencilLine } from "lucide-react";
+import { formatSize } from "@/lib/utils";
 
 interface FooterProps {
   totalKeys?: number;
-  totalSize?: string;
+  totalSize?: number;
   writesToday?: number;
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
 
 export function Footer({ totalKeys, totalSize, writesToday }: FooterProps) {
   return (
@@ -27,7 +20,7 @@ export function Footer({ totalKeys, totalSize, writesToday }: FooterProps) {
           </span>
           <span className="flex items-center gap-1.5">
             <HardDrive className="size-3.5" />
-            总存储 <strong className="text-foreground tabular-nums">{totalSize ? formatSize(Number(totalSize)) : "—"}</strong>
+            总存储 <strong className="text-foreground tabular-nums">{totalSize != null ? formatSize(totalSize) : "—"}</strong>
           </span>
           <span className="flex items-center gap-1.5">
             <PencilLine className="size-3.5" />
