@@ -360,7 +360,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { setShowPwdOptions(!showPwdOptions); if (!showPwdOptions) setNewPasswordTouched(false); }}
+                onClick={() => { setShowPwdOptions(!showPwdOptions); if (!showPwdOptions) { setNewPasswordTouched(false); setRemovePassword(false); } else { setNewPassword(""); } }}
                 type="button"
                 className="h-8 w-8"
               >
@@ -376,7 +376,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
                 type="password"
                 placeholder="新密码"
                 value={newPassword}
-                onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
+                onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); setRemovePassword(false); }}
                 className="font-mono h-8 w-24 sm:w-[110px]"
               />
               <Button
@@ -391,7 +391,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
+                onClick={() => { setShowPwdOptions(false); setNewPassword(""); setNewPasswordTouched(false); }}
                 className="h-8 text-xs text-muted-foreground"
                 type="button"
               >
