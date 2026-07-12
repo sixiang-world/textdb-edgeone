@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@import "@fontsource-variable/geist";
 
 @theme inline {
   --color-ring: oklch(0.708 0 0);
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 }
