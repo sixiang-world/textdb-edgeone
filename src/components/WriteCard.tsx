@@ -359,43 +359,42 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </Button>
           </div>
-        </div>
-
-        {/* Change / remove password — 独立在按钮栏之外 */}
-        {password && (
-          <div className="flex gap-2 items-center">
-            {showPwdOptions ? (
-              <>
-                <Input
-                  type="password"
-                  placeholder="New password (leave empty to remove protection)"
-                  value={newPassword}
-                  onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
-                  className="font-mono text-sm h-8 flex-1"
-                />
+          {/* Change / remove password */}
+          {password && (
+            <div className="flex gap-2 items-center shrink-0">
+              {showPwdOptions ? (
+                <>
+                  <Input
+                    type="password"
+                    placeholder="New password (leave empty to remove protection)"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
+                    className="font-mono text-sm h-9 min-w-[120px]"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
+                    className="h-9 text-xs text-muted-foreground whitespace-nowrap"
+                    type="button"
+                  >
+                    ✕ 取消
+                  </Button>
+                </>
+              ) : (
                 <Button
-                  variant="ghost"
+                  variant="link"
                   size="sm"
-                  onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
-                  className="h-8 text-xs text-muted-foreground whitespace-nowrap"
+                  onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
+                  className="h-9 px-1 text-xs text-muted-foreground whitespace-nowrap"
                   type="button"
                 >
-                  ✕ 取消
+                  ▶ Change / remove password
                 </Button>
-              </>
-            ) : (
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
-                className="h-8 px-0 text-xs text-muted-foreground"
-                type="button"
-              >
-                ▶ Change / remove password
-              </Button>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 源链接（始终显示） */}
         {sourceUrl && (
