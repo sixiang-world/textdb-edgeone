@@ -26,6 +26,19 @@ interface VersionEntry {
  */
 const VERSIONS: VersionEntry[] = [
   {
+    version: "1.2.0",
+    date: "2026-07-13",
+    changes: [
+      { type: "优化", text: "前端全面重构：从 Tab 标签页迁移为紧凑图标侧边栏布局，悬停展开文字提示" },
+      { type: "优化", text: "页面布局新增侧边栏 + 工具栏面包屑 + 内容区 + 页脚统计的四层结构" },
+      { type: "优化", text: "密码输入移至上传按钮右侧，支持展开/折叠输入新密码和移除密码" },
+      { type: "优化", text: "统计信息从内容区移至页脚，页面更清爽" },
+      { type: "新增", text: "导航状态持久化 (localStorage)，刷新或重开页面自动恢复上次所在的页面" },
+      { type: "优化", text: "全局样式改用 Geist Variable 字体（Vercel 官方字体），shadcn/ui 原生色系" },
+      { type: "修复", text: "修复 removePassword 状态优先级导致的静默密码移除问题" },
+    ],
+  },
+  {
     version: "1.1.2",
     date: "2026-06-26",
     changes: [
