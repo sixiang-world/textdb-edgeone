@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, type NavItem } from "./Sidebar";
 import { Footer } from "./Footer";
 
-export type NavItem = "operate" | "folder" | "api" | "changelog";
+export type { NavItem };
 
 interface LayoutProps {
   activeNav: NavItem;
