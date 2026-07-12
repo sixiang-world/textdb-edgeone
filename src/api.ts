@@ -48,12 +48,16 @@ export async function readData(key: string): Promise<string> {
   return res.text();
 }
 
-export async function uploadFile(file: UploadItem): Promise<UploadResult> {
+export async function uploadFile(file: UploadItem, password?: string): Promise<UploadResult> {
   try {
+    const body = new URLSearchParams();
+    body.set('key', file.key);
+    body.set('value', file.content);
+    if (password) body.set('password', password);
     const res = await fetch(`${BASE}/update/`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `key=${encodeURIComponent(file.key)}&value=${encodeURIComponent(file.content)}`,
+      body: body.toString(),
     });
     const data = await res.json();
     return {

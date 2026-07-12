@@ -98,6 +98,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPwdOptions, setShowPwdOptions] = useState(false);
+  const [newPasswordTouched, setNewPasswordTouched] = useState(false); // 避免打开面板但未输入时意外移除密码
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -140,7 +141,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setJsUrl("");
     try {
       const pwd = password || undefined;
-      const npwd = showPwdOptions ? newPassword : undefined;
+      const npwd = (showPwdOptions && newPasswordTouched) ? newPassword : undefined;
       const d = await writeData(key, value, pwd, npwd);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
@@ -151,6 +152,10 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         if (looksLikeJs(value)) {
           setJsUrl(`${BASE}/file/js/${key}`);
         }
+        // 写入成功：清除新密码相关状态
+        setNewPassword("");
+        setNewPasswordTouched(false);
+        setShowPwdOptions(false);
         toast.success("写入成功");
         onStatsRefresh?.();
       } else toast.error(d.error || "写入失败");
@@ -172,6 +177,12 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
       const d = await deleteData(key, password || undefined);
       setResult(JSON.stringify(d, null, 2));
       if (d.status === 1) {
+        // 删除成功：清除所有密码相关状态
+        setPassword("");
+        setNewPassword("");
+        setNewPasswordTouched(false);
+        setShowPwdOptions(false);
+        setShowPassword(false);
         toast.success("已删除");
         onStatsRefresh?.();
       } else toast.error(d.error || "删除失败");
@@ -347,30 +358,43 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
             {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
-          {password && (
-            <div className="shrink-0 sm:max-w-[220px] w-full sm:w-auto">
-              {showPwdOptions ? (
+        </div>
+
+        {/* Change / remove password — 独立在按钮栏之外 */}
+        {password && (
+          <div className="flex gap-2 items-center">
+            {showPwdOptions ? (
+              <>
                 <Input
                   type="password"
                   placeholder="New password (leave empty to remove protection)"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="font-mono text-sm h-8"
+                  onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true); }}
+                  className="font-mono text-sm h-8 flex-1"
                 />
-              ) : (
                 <Button
-                  variant="link"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => setShowPwdOptions(true)}
-                  className="h-8 px-0 text-xs text-muted-foreground"
+                  onClick={() => { setShowPwdOptions(false); setNewPasswordTouched(false); }}
+                  className="h-8 text-xs text-muted-foreground whitespace-nowrap"
                   type="button"
                 >
-                  ▶ Change / remove password
+                  ✕ 取消
                 </Button>
-              )}
-            </div>
-          )}
-        </div>
+              </>
+            ) : (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => { setShowPwdOptions(true); setNewPasswordTouched(false); }}
+                className="h-8 px-0 text-xs text-muted-foreground"
+                type="button"
+              >
+                ▶ Change / remove password
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* 源链接（始终显示） */}
         {sourceUrl && (

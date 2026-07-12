@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Loader2, Shuffle, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Eye, EyeOff, Loader2, Shuffle, Upload } from "lucide-react";
 import { uploadFile } from "@/api";
 import { pathToKey, rewriteRefs, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
@@ -25,6 +25,8 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
   const [results, setResults] = useState<UploadResult[]>([]);
   const [entryUrl, setEntryUrl] = useState("");
   const [collapsed, setCollapsed] = useState(true);    // file list collapsed by default
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function genPrefix() {
@@ -145,8 +147,9 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
 
     // Upload one-by-one (respect rate limits, track progress)
     const allResults: UploadResult[] = [];
+    const pwd = password || undefined;
     for (let i = 0; i < rewritten.length; i++) {
-      const res = await uploadFile(rewritten[i]);
+      const res = await uploadFile(rewritten[i], pwd);
       allResults.push(res);
       setProgress({ done: i + 1, total: rewritten.length });
     }
@@ -197,6 +200,26 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
           />
           <Button variant="outline" size="icon" onClick={genPrefix} title="随机生成">
             <Shuffle className="size-4" />
+          </Button>
+        </div>
+
+        {/* Password input */}
+        <div className="flex gap-2 items-center">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password (set on write, verify on update/delete)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="font-mono flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
+            type="button"
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </Button>
         </div>
 
