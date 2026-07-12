@@ -3,7 +3,7 @@ import { SidebarNavItem } from "./SidebarNavItem";
 
 export type NavItem = "operate" | "folder" | "api" | "changelog";
 
-interface SidebarProps {
+export interface SidebarProps {
   activeNav: NavItem;
   onNavChange: (nav: NavItem) => void;
   totalKeys?: number;
