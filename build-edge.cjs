@@ -39,7 +39,7 @@ const lines = [
   "const AI_CRAWLERS = [",
   "  'Claude-Web', 'GPTBot', 'ChatGPT-User', 'CCBot',",
   "  'PerplexityBot', 'Anthropic-AI', 'Amazonbot',",
-  "  'Bytespider', 'Applebot-Extended', 'FacebookBot',",
+  "  'Bytespider', 'Applebot-Extended', 'FacebookBot', 'ImagesiftBot', 'Timpibot',",
   "  'cohere-ai', 'Diffbot', 'DataForSeoBot', 'omgili',",
   "  'Google-Extended',",
   "];",
