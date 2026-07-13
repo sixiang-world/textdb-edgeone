@@ -20,32 +20,6 @@ function walkDir(dir) {
 }
 walkDir(distDir);
 
-// 构建时注入 JSON-LD 结构化数据到 index.html（所有客户端均可获取，对用户不可见）
-const jsonLdScript = `<script type="application/ld+json">${JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "TextDB EdgeOne",
-  "description": "基于 EdgeOne Pages + KV 的在线文本数据库。支持写入、读取、删除文本数据，HTML/JS 渲染，文件夹上传，密码保护等功能。无需注册登录，匿名即可使用。",
-  "url": "https://text.hunluan.space/",
-  "mainEntityOfPage": "https://text.hunluan.space/docs",
-  "applicationCategory": "Database",
-  "operatingSystem": "Web",
-  "browserRequirements": "Requires JavaScript",
-  "featureList": [
-    "写入/读取/删除文本 Key-Value",
-    "HTML 渲染 (/p/{key})",
-    "JavaScript 输出 (/file/js/{key})",
-    "Markdown 渲染 (/md/{key}, /file/md/{key})",
-    "文件夹批量上传 (webkitdirectory)",
-    "密码保护 (设置/修改/移除)",
-    "二维码生成与下载",
-    "RESTful API"
-  ]
-})}</script>`;
-if (staticFiles['/index.html']) {
-  staticFiles['/index.html'] = staticFiles['/index.html'].replace('</head>', jsonLdScript + '\n</head>');
-}
-
 const staticMapJSON = JSON.stringify(staticFiles);
 
 // 加载 AI 爬虫列表（从独立 JSON 文件读取，构建时嵌入）
