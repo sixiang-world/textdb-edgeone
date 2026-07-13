@@ -20,6 +20,32 @@ function walkDir(dir) {
 }
 walkDir(distDir);
 
+// 构建时注入 JSON-LD 结构化数据到 index.html（所有客户端均可获取，对用户不可见）
+const jsonLdScript = `<script type="application/ld+json">${JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "TextDB EdgeOne",
+  "description": "基于 EdgeOne Pages + KV 的在线文本数据库。支持写入、读取、删除文本数据，HTML/JS 渲染，文件夹上传，密码保护等功能。无需注册登录，匿名即可使用。",
+  "url": "https://text.hunluan.space/",
+  "mainEntityOfPage": "https://text.hunluan.space/docs",
+  "applicationCategory": "Database",
+  "operatingSystem": "Web",
+  "browserRequirements": "Requires JavaScript",
+  "featureList": [
+    "写入/读取/删除文本 Key-Value",
+    "HTML 渲染 (/p/{key})",
+    "JavaScript 输出 (/file/js/{key})",
+    "Markdown 渲染 (/md/{key}, /file/md/{key})",
+    "文件夹批量上传 (webkitdirectory)",
+    "密码保护 (设置/修改/移除)",
+    "二维码生成与下载",
+    "RESTful API"
+  ]
+})}</script>`;
+if (staticFiles['/index.html']) {
+  staticFiles['/index.html'] = staticFiles['/index.html'].replace('</head>', jsonLdScript + '\n</head>');
+}
+
 const staticMapJSON = JSON.stringify(staticFiles);
 
 // 加载 AI 爬虫列表（从独立 JSON 文件读取，构建时嵌入）
@@ -46,28 +72,6 @@ const lines = [
   "  const ua = userAgent.toLowerCase();",
   "  return AI_CRAWLERS.some(name => ua.includes(name.toLowerCase()));",
   "}",
-  "",
-  "const AI_JSON_LD = JSON.stringify({",
-  '  "@context": "https://schema.org",',
-  '  "@type": "WebApplication",',
-  '  "name": "TextDB EdgeOne",',
-  '  "description": "基于 EdgeOne Pages + KV 的在线文本数据库。支持写入、读取、删除文本数据，HTML/JS 渲染，文件夹上传，密码保护等功能。无需注册登录，匿名即可使用。",',
-  '  "url": "https://text.hunluan.space/",',
-  '  "mainEntityOfPage": "https://text.hunluan.space/docs",',
-  '  "applicationCategory": "Database",',
-  '  "operatingSystem": "Web",',
-  '  "browserRequirements": "Requires JavaScript",',
-  '  "featureList": [',
-  '    "写入/读取/删除文本 Key-Value",',
-  '    "HTML 渲染 (/p/{key})",',
-  '    "JavaScript 输出 (/file/js/{key})",',
-  '    "Markdown 渲染 (/md/{key}, /file/md/{key})",',
-  '    "文件夹批量上传 (webkitdirectory)",',
-  '    "密码保护 (设置/修改/移除)",',
-  '    "二维码生成与下载",',
-  '    "RESTful API"',
-  '  ]',
-  "});",
   "",
   "const HTML_SECURITY_HEADERS = {",
   "  'Content-Type': 'text/html; charset=utf-8',",
@@ -364,14 +368,11 @@ const lines = [
   "",
   "  if (path === '/' || path === '/index.html') {",
   "    const requestUA = request.headers.get('User-Agent') || '';",
-  "    let html = STATIC_FILES['/index.html'];",
   "    const respHeaders = {'Content-Type': 'text/html; charset=utf-8', 'Vary': 'User-Agent', ...CORS};",
   "    if (isAiCrawler(requestUA)) {",
-  "      respHeaders['Cache-Control'] = 'no-cache';",
-  "      const script = `<script type=\"application/ld+json\">${AI_JSON_LD}</script>`;",
-  "      html = html.replace('</head>', script + '\\n</head>');",
+  "      respHeaders['Cache-Control'] = 'no-cache, private';",
   "    }",
-  "    return new Response(html, {headers: respHeaders});",
+  "    return new Response(STATIC_FILES['/index.html'], {headers: respHeaders});",
   "  }",
   "  if (STATIC_FILES[path]) {",
   "    return new Response(STATIC_FILES[path], {headers: {'Content-Type': getMimeType(path), ...CORS}});",
