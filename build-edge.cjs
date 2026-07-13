@@ -388,4 +388,9 @@ const edgeDir = path.join(__dirname, "edge-functions");
 if (!fs.existsSync(edgeDir)) fs.mkdirSync(edgeDir);
 fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 
+// 写入 .edgeone 部署目录（确保部署时使用最新 edge function）
+const edgeoneEdgeDir = path.join(__dirname, ".edgeone", "edge-functions");
+if (!fs.existsSync(edgeoneEdgeDir)) fs.mkdirSync(edgeoneEdgeDir, { recursive: true });
+fs.writeFileSync(path.join(edgeoneEdgeDir, "index.js"), edgeCode);
+
 console.log("✅ build-edge.cjs fixed with safe join.");
