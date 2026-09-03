@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { QrCode } from "@/components/QrCode";
 import { writeData, deleteData, readData } from "@/api";
+import { recordKey, removeKey } from "@/lib/keyHistory";
 import { toast } from "sonner";
 
 const BASE = location.origin;
@@ -86,7 +87,7 @@ function looksLikeJs(value: string): boolean {
   );
 }
 
-export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
+export function WriteCard({ onStatsRefresh, selectedKey }: { onStatsRefresh?: () => void; selectedKey?: string }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -102,6 +103,15 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [showPwdOptions, setShowPwdOptions] = useState(false);
   const [removePassword, setRemovePassword] = useState(false);
   const [newPasswordTouched, setNewPasswordTouched] = useState(false);
+
+  // 外部选择 key 时自动填入并读取
+  useEffect(() => {
+    if (selectedKey && selectedKey !== key) {
+      setKey(selectedKey);
+      handleRead(selectedKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey]);
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -165,6 +175,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setRemovePassword(false);
+        recordKey(key, new TextEncoder().encode(value).length);
         toast.success("写入成功");
         onStatsRefresh?.();
       } else toast.error(d.error || "写入失败");
@@ -193,6 +204,7 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         setShowPwdOptions(false);
         setShowPassword(false);
         setRemovePassword(false);
+        removeKey(key);
         toast.success("已删除");
         onStatsRefresh?.();
       } else toast.error(d.error || "删除失败");
@@ -203,8 +215,9 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     }
   }
 
-  async function handleRead() {
-    if (!key) return toast.error("请输入 Key");
+  async function handleRead(readKey?: string) {
+    const k = readKey || key;
+    if (!k) return toast.error("请输入 Key");
     setLoadingOp("read");
     setResult("");
     setSourceUrl("");
@@ -212,12 +225,12 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setJsUrl("");
     setReadOnly(false);
     try {
-      const t = await readData(key);
+      const t = await readData(k);
       if (t) {
         setValue(t);
-        setSourceUrl(`${BASE}/${key}`);
-        if (looksLikeHtml(t)) setRenderUrl(`${BASE}/p/${key}`);
-        if (looksLikeJs(t)) setJsUrl(`${BASE}/file/js/${key}`);
+        setSourceUrl(`${BASE}/${k}`);
+        if (looksLikeHtml(t)) setRenderUrl(`${BASE}/p/${k}`);
+        if (looksLikeJs(t)) setJsUrl(`${BASE}/file/js/${k}`);
         const preview = getCollapsedPreview(t);
         if (preview !== null) setCollapsed(true);
         setReadOnly(true);

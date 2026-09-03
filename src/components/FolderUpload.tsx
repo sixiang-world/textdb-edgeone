@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Eye, EyeOff, Loader2, Shuffle, Upload } from "lucide-react";
 import { uploadFile } from "@/api";
+import { recordKey } from "@/lib/keyHistory";
 import { pathToKey, rewriteRefs, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
 import { toast } from "sonner";
@@ -151,6 +152,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     for (let i = 0; i < rewritten.length; i++) {
       const res = await uploadFile(rewritten[i], pwd);
       allResults.push(res);
+      if (res.success) recordKey(res.key);
       setProgress({ done: i + 1, total: rewritten.length });
     }
 
