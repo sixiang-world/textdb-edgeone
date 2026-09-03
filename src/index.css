@@ -33,3 +33,135 @@
 .dark .swagger-ui-wrapper .swagger-ui svg {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* --- Markdown 增强样式 --- */
+
+/* TOC 目录按钮 */
+.toc-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.toc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.15s, background-color 0.15s;
+}
+.toc-toggle:hover {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--accent));
+}
+
+/* TOC 下拉面板 */
+.toc-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background-color: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  padding: 8px 0;
+}
+.toc-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc-panel li {
+  line-height: 1.4;
+}
+.toc-panel a {
+  display: block;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toc-panel a:hover {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--accent));
+}
+
+/* Mermaid 图表块 */
+.mermaid-block {
+  display: flex;
+  justify-content: center;
+  margin: 1.5em 0;
+  padding: 1em;
+  background-color: hsl(var(--muted) / 0.3);
+  border-radius: 8px;
+}
+.mermaid-block svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 代码块：rehype-highlight 适配 prose */
+.prose pre code.hljs,
+.prose pre code[class*="language-"] {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+}
+.prose pre:has(code.hljs) {
+  padding: 1em;
+  overflow-x: auto;
+  border-radius: 8px;
+}
+/* light 模式下 github-dark 主题反色适配 */
+:not(.dark) .prose pre:has(code.hljs) {
+  background-color: #0d1117;
+}
+
+/* 行内代码 */
+.prose :not(pre) > code {
+  background-color: hsl(var(--muted));
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* 标题锚点链接（rehype-autolink-headings wrap 模式） */
+.prose h1 a,
+.prose h2 a,
+.prose h3 a,
+.prose h4 a,
+.prose h5 a,
+.prose h6 a {
+  color: inherit;
+  text-decoration: none;
+}
+.prose h1 a:hover,
+.prose h2 a:hover,
+.prose h3 a:hover,
+.prose h4 a:hover,
+.prose h5 a:hover,
+.prose h6 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* KaTeX 公式 */
+.prose .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+.prose .katex {
+  font-size: 1.05em;
+}
