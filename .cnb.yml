@@ -26,6 +26,93 @@ $:
           - name: verify build
             script: npm run typecheck && npm run lint
 
+  ## ============================================================
+  ## 手动触发：CNB → GitHub 镜像同步（参考 simplereader 工作流）
+  ## 在仓库页面手动点击触发，支持运行变量控制推送行为：
+  ##   PUSH_BRANCH  - 指定要推送的分支（空格分隔），默认推送所有本地分支
+  ##   FORCE_PUSH   - 设为 true 时使用 --force 强制推送
+  ##   PUSH_TAGS    - 设为 false 时跳过标签推送
+  ##   DRY_RUN      - 设为 true 时只打印将执行的操作，不实际推送
+  ## 凭证与 push 自动同步一致：通过 imports 从 git-key 密钥仓库导入
+  ## ============================================================
+  web_trigger:
+    - name: sync-to-github-manual
+      docker:
+        image: alpine/git:v2.45.2
+      imports:
+        - https://cnb.cool/shisheng820/git-key/-/blob/main/git-push.yml
+      env:
+        GITHUB_REPO: textdb-edgeone
+      stages:
+        - name: validate-credentials
+          script: |
+            if [ -z "$GIT_PUSH_USER" ] || [ -z "$GIT_PUSH_TOKEN" ]; then
+              echo "ERROR: GIT_PUSH_USER / GIT_PUSH_TOKEN 未配置（需通过 git-key imports 导入）"
+              echo "Please check CNB pipeline imports"
+              exit 78
+            fi
+
+        - name: configure-git
+          script: |
+            git config user.name "cnb-sync[bot]"
+            git config user.email "cnb-sync[bot]@users.noreply.github.com"
+
+        - name: add-github-remote
+          script: |
+            git remote add github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git" 2>/dev/null || \
+              git remote set-url github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git"
+
+        - name: push-branches
+          script: |
+            FORCE_FLAG=""
+            if [ "${FORCE_PUSH}" = "true" ]; then
+              FORCE_FLAG="--force"
+            fi
+
+            BRANCHES="${PUSH_BRANCH}"
+            if [ -z "$BRANCHES" ]; then
+              BRANCHES=$(git branch --format='%(refname:short)' 2>/dev/null || git branch | sed 's/^\* //')
+            fi
+
+            for BRANCH in $BRANCHES; do
+              if [ "${DRY_RUN}" = "true" ]; then
+                echo "[DRY RUN] Would push: branch ${BRANCH} -> github ${BRANCH} ${FORCE_FLAG}"
+              else
+                echo "Pushing branch: ${BRANCH}"
+                git push github "${BRANCH}" ${FORCE_FLAG} 2>&1 || echo "WARN: failed to push branch ${BRANCH}"
+              fi
+            done
+
+        - name: push-tags
+          script: |
+            if [ "${PUSH_TAGS}" = "false" ]; then
+              echo "Skipping tags (PUSH_TAGS=false)"
+              exit 0
+            fi
+
+            FORCE_FLAG=""
+            if [ "${FORCE_PUSH}" = "true" ]; then
+              FORCE_FLAG="--force"
+            fi
+
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "[DRY RUN] Would push: all tags ${FORCE_FLAG}"
+              git tag -l | head -20
+            else
+              echo "Pushing all tags..."
+              git push github --tags ${FORCE_FLAG} 2>&1 || echo "WARN: failed to push some tags"
+            fi
+
+        - name: summary
+          script: |
+            echo "=== CNB → GitHub Sync Summary ==="
+            echo "Target: ${GIT_PUSH_USER}/${GITHUB_REPO}"
+            echo "Force Push: ${FORCE_PUSH:-false}"
+            echo "Branches: ${PUSH_BRANCH:-all local}"
+            echo "Tags: ${PUSH_TAGS:-true}"
+            echo "Dry Run: ${DRY_RUN:-false}"
+            echo "==============================="
+
 ## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
 "(main|dev)":
   push:
