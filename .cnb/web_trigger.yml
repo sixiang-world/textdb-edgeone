@@ -1,0 +1,50 @@
+## 自定义手动触发按钮 — CNB → GitHub 镜像同步
+## 在仓库页面（main/dev 分支）显示"同步到 GitHub"按钮
+## 点击后触发 .cnb.yml 中的 web_trigger_sync 事件流水线
+## 按钮输入值通过同名环境变量传入流水线脚本（PUSH_BRANCH / FORCE_PUSH / PUSH_TAGS / DRY_RUN）
+branch:
+  - reg: ^(main|dev)$
+    buttons:
+      - name: 同步到 GitHub
+        description: 手动将 CNB 分支同步到 GitHub（触发 EdgeOne Pages 自动部署）
+        event: web_trigger_sync
+        inputs:
+          PUSH_BRANCH:
+            name: 推送分支
+            description: 要推送的分支，空格分隔；留空则推送所有本地分支
+            type: input
+            required: false
+            default: ""
+          FORCE_PUSH:
+            name: 强制推送
+            description: 是否使用 --force 强制推送
+            type: select
+            required: false
+            default: "false"
+            options:
+              - name: 否
+                value: "false"
+              - name: 是
+                value: "true"
+          PUSH_TAGS:
+            name: 推送标签
+            description: 是否推送标签
+            type: select
+            required: false
+            default: "true"
+            options:
+              - name: 是
+                value: "true"
+              - name: 否
+                value: "false"
+          DRY_RUN:
+            name: 演练模式
+            description: 只打印将执行的操作，不实际推送
+            type: select
+            required: false
+            default: "false"
+            options:
+              - name: 否
+                value: "false"
+              - name: 是
+                value: "true"
