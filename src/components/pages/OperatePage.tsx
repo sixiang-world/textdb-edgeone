@@ -17,11 +17,11 @@ export function OperatePage({ onStatsRefresh }: OperatePageProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <KeyHistory onSelect={(key) => setSelectedKey(key)} />
       <WriteCard
         onStatsRefresh={handleStatsRefresh}
         selectedKey={selectedKey}
       />
+      <KeyHistory onSelect={(key) => setSelectedKey(key)} />
     </div>
   );
 }
