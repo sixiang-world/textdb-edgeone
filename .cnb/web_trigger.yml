@@ -2,14 +2,14 @@
 ## 参考 simplereader 的 .cnb/web_trigger.yml
 ##
 ## 按钮可见性：
-##   main 分支：部署到生产 / 部署到预发 / 同步 GitHub
+##   master 分支：部署到生产 / 部署到预发 / 同步 GitHub
 ##   其他分支（含 dev）：部署到预发 / 同步 GitHub
 ##
 ## 对应 .cnb.yml 中 $ 兜底分支下的 web_trigger_* 事件
 ## 按钮输入值通过同名环境变量传入流水线脚本
 branch:
-  # main 分支：三个按钮
-  - reg: ^main$
+  # master 分支：三个按钮
+  - reg: ^master$
     buttons:
       - name: 部署到生产
         description: 构建并部署到 EdgeOne Pages 生产环境（项目 textdb-edgeone）
@@ -64,7 +64,7 @@ branch:
                 value: "true"
 
   # 其他分支（含 dev）：两个按钮（不含生产）
-  - reg: ^(?!main$).+
+  - reg: ^(?!master$).+
     buttons:
       - name: 部署到预发
         description: 构建并部署到 EdgeOne Pages 预发环境（项目 textdb-edgeone）
