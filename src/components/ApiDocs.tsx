@@ -1,201 +1,57 @@
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-const B = location.origin;
-
-const endpoints = [
-  { method: "POST", color: "default" as const, path: "/update/", desc: "写入 / 更新 / 删除" },
-  { method: "GET", color: "secondary" as const, path: "/{key}", desc: "读取数据" },
-  { method: "GET", color: "secondary" as const, path: "/p/{key}", desc: "HTML 渲染" },
-  { method: "GET", color: "secondary" as const, path: "/md/{key}", desc: "Markdown 渲染" },
-  { method: "GET", color: "secondary" as const, path: "/file/{ext}/{key}", desc: "按文件类型输出（js/css/json 等，不支持 html/svg）" },
-  { method: "POST", color: "default" as const, path: "/{key}", desc: "直接写入（简写）" },
-  { method: "DELETE", color: "destructive" as const, path: "/{key}", desc: "删除数据" },
-];
-
-const params = [
-  { name: "key", required: true, desc: "文本标识，仅支持字母、数字、下划线，最长 512 字符" },
-  { name: "value", required: false, desc: "文本数据，最大 5 MiB。留空则删除" },
-  { name: "password", required: false, desc: "密码。首次写入时设置，后续更新/删除需传入验证" },
-  { name: "new_password", required: false, desc: "新密码。传入正确 password 后可改密码或置空移除保护" },
-];
-
-const curlCode = `# 写入（无密码）
-curl -X POST "${B}/update/" \\
-  -d "key=mykey&value=hello world"
-
-# 写入（带密码）
-curl -X POST "${B}/update/" \\
-  -d "key=mykey&value=hello world&password=abc123"
-
-# 更新（需密码验证）
-curl -X POST "${B}/update/" \\
-  -d "key=mykey&value=new content&password=abc123"
-
-# 读取（无需密码）
-curl "${B}/mykey"
-
-# 删除（无密码）
-curl -X DELETE "${B}/mykey"
-
-# 删除（有密码）
-curl -X DELETE "${B}/mykey" \\
-  -H "X-Password: abc123"`;
-
-const pyCode = `import requests
-
-# 写入（带密码）
-requests.post("${B}/update/",
-  data={"key": "mykey", "value": "hello world", "password": "abc123"})
-
-# 读取
-print(requests.get("${B}/mykey").text)
-
-# 删除（有密码）
-requests.post("${B}/update/",
-  data={"key": "mykey", "value": "", "password": "abc123"})`;
-
-const jsCode = `// 写入（带密码）
-await fetch("${B}/update/", {
-  method: "POST",
-  headers: {"Content-Type": "application/x-www-form-urlencoded"},
-  body: "key=mykey&value=hello world&password=abc123"
-});
-
-// 读取
-const text = await (await fetch("${B}/mykey")).text();
-
-// 删除（有密码）
-await fetch("${B}/update/", {
-  method: "POST",
-  headers: {"Content-Type": "application/x-www-form-urlencoded"},
-  body: "key=mykey&value=&password=abc123"
-});`;
-
-function CodeBlock({ code, label }: { code: string; label: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase">
-          {label}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs"
-          onClick={() => {
-            navigator.clipboard.writeText(code);
-            toast.success("已复制");
-          }}
-        >
-          <Copy />
-          复制
-        </Button>
-      </div>
-      <pre className="rounded-md border bg-muted p-4 text-sm font-mono overflow-x-auto">
-        {code}
-      </pre>
-    </div>
-  );
-}
+import { AlertCircle, Loader2 } from "lucide-react";
+import SwaggerUI from "swagger-ui-react";
+import "swagger-ui-react/swagger-ui.css";
 
 export function ApiDocs() {
+  const [spec, setSpec] = useState<object | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/openapi.json")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(setSpec)
+      .catch((e) => setError(e.message || String(e)));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>API 接口</CardTitle>
+          <CardTitle>API 文档</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {endpoints.map((ep) => (
-            <div key={ep.path + ep.method} className="flex items-center gap-3 text-sm">
-              <Badge variant={ep.color}>{ep.method}</Badge>
-              <code className="text-muted-foreground">{ep.path}</code>
-              <span className="text-muted-foreground">{ep.desc}</span>
+        <CardContent>
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              加载 OpenAPI 规范失败：{error}
             </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>请求参数（POST /update/）</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>参数</TableHead>
-                <TableHead>必填</TableHead>
-                <TableHead>说明</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {params.map((p) => (
-                <TableRow key={p.name}>
-                  <TableCell>
-                    <code className="text-sm">{p.name}</code>
-                  </TableCell>
-                  <TableCell>
-                    {p.required ? (
-                      <Badge variant="destructive" className="text-xs">
-                        必填
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {p.desc}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>请求示例</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <CodeBlock code={curlCode} label="cURL" />
-          <Separator />
-          <CodeBlock code={pyCode} label="Python" />
-          <Separator />
-          <CodeBlock code={jsCode} label="JavaScript" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>说明</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="text-sm text-muted-foreground flex flex-col gap-2 list-disc pl-4">
-            <li>读取不限次数，每个 IP 每日写入/删除操作限 500 次</li>
-            <li>写入时可设置密码保护，后续更新/删除需验证密码，读取始终不需要密码</li>
-            <li>1 年未更新的记录会自动删除</li>
-            <li>全程支持 CORS 跨域请求</li>
-          </ul>
+          )}
+          {!spec && !error && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              加载中…
+            </div>
+          )}
+          {spec && (
+            <div className="swagger-ui-wrapper">
+              <SwaggerUI
+                spec={spec}
+                docExpansion="list"
+                defaultModelsExpandDepth={1}
+                tryItOutEnabled={true}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
