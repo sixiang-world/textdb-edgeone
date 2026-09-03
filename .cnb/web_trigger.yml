@@ -1,13 +1,74 @@
 ## 自定义手动触发按钮 — CNB → EdgeOne Pages 部署 + GitHub 镜像同步
-## 在仓库页面（main/dev 分支）显示手动按钮
-## 点击后触发 .cnb.yml 中的对应事件流水线
+## 参考 simplereader 的 .cnb/web_trigger.yml
+##
+## 按钮可见性：
+##   main 分支：部署到生产 / 部署到预发 / 同步 GitHub
+##   其他分支（含 dev）：部署到预发 / 同步 GitHub
+##
+## 对应 .cnb.yml 中 $ 兜底分支下的 web_trigger_* 事件
 ## 按钮输入值通过同名环境变量传入流水线脚本
 branch:
-  - reg: ^(main|dev)$
+  # main 分支：三个按钮
+  - reg: ^main$
     buttons:
-      - name: 部署到 EdgeOne
-        description: 构建并部署到 EdgeOne Pages（项目 textdb-edgeone），由 CNB 触发，不依赖 GitHub
-        event: web_trigger_deploy
+      - name: 部署到生产
+        description: 构建并部署到 EdgeOne Pages 生产环境（项目 textdb-edgeone）
+        event: web_trigger_deploy_production
+
+      - name: 部署到预发
+        description: 构建并部署到 EdgeOne Pages 预发环境（项目 textdb-edgeone）
+        event: web_trigger_deploy_preview
+
+      - name: 同步到 GitHub
+        description: 手动将 CNB 分支同步到 GitHub
+        event: web_trigger_sync
+        inputs:
+          PUSH_BRANCH:
+            name: 推送分支
+            description: 要推送的分支，空格分隔；留空则推送所有本地分支
+            type: input
+            required: false
+            default: ""
+          FORCE_PUSH:
+            name: 强制推送
+            description: 是否使用 --force 强制推送
+            type: select
+            required: false
+            default: "false"
+            options:
+              - name: 否
+                value: "false"
+              - name: 是
+                value: "true"
+          PUSH_TAGS:
+            name: 推送标签
+            description: 是否推送标签
+            type: select
+            required: false
+            default: "true"
+            options:
+              - name: 是
+                value: "true"
+              - name: 否
+                value: "false"
+          DRY_RUN:
+            name: 演练模式
+            description: 只打印将执行的操作，不实际推送
+            type: select
+            required: false
+            default: "false"
+            options:
+              - name: 否
+                value: "false"
+              - name: 是
+                value: "true"
+
+  # 其他分支（含 dev）：两个按钮（不含生产）
+  - reg: ^(?!main$).+
+    buttons:
+      - name: 部署到预发
+        description: 构建并部署到 EdgeOne Pages 预发环境（项目 textdb-edgeone）
+        event: web_trigger_deploy_preview
 
       - name: 同步到 GitHub
         description: 手动将 CNB 分支同步到 GitHub

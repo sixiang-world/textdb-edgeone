@@ -1,9 +1,12 @@
 ## ============================================================
 ## textdb-edgeone — CNB 流水线
-## 参考 simplereader 的 .cnb.yml 工作流结构
+## 参考 simplereader 的 .cnb.yml / .cnb/web_trigger.yml 工作流结构
 ##
-## 部署链路：CNB（push 或手动按钮）→ 部署 EdgeOne Pages + 镜像 GitHub
-## 由 CNB 触发部署，不再依赖 GitHub push 自动触发 EdgeOne
+## 环境边界：
+##   - dev / 其他分支：只允许部署到 EdgeOne Pages 预发环境（preview）
+##   - main 分支：允许部署到生产环境（production）
+##
+## 部署由 CNB 触发（push 自动 / 手动按钮），不依赖 GitHub 自动部署
 ##
 ## 密钥仓库：
 ##   - shisheng820/secret  → edgeone.yml 提供 EDGEONE_PAGES_API_TOKEN
@@ -15,10 +18,10 @@
   docker:
     image: node:22-alpine
 
-# ===== EdgeOne Pages 部署公共 stages =====
+# ===== EdgeOne Pages 部署：预发环境 =====
 # 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
 # （自动执行 npm install + npm run build，并打包 edge-functions 一起上传）
-.deploy-edgeone: &deploy-edgeone
+.deploy-preview: &deploy-preview
   - name: validate-edgeone-token
     script: |
       if [ -z "$EDGEONE_PAGES_API_TOKEN" ]; then
@@ -26,11 +29,24 @@
         echo "请在 EdgeOne Pages 控制台创建 API Token 并加入密钥仓库"
         exit 78
       fi
-  - name: 部署到 EdgeOne Pages
+  - name: 部署到 EdgeOne Pages 预发环境
+    script: |
+      npx --yes edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
+
+# ===== EdgeOne Pages 部署：生产环境 =====
+.deploy-production: &deploy-production
+  - name: validate-edgeone-token
+    script: |
+      if [ -z "$EDGEONE_PAGES_API_TOKEN" ]; then
+        echo "ERROR: EDGEONE_PAGES_API_TOKEN 未配置（需通过 secret/edgeone.yml imports 导入）"
+        echo "请在 EdgeOne Pages 控制台创建 API Token 并加入密钥仓库"
+        exit 78
+      fi
+  - name: 部署到 EdgeOne Pages 生产环境
     script: |
       npx --yes edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
-# ===== GitHub 同步公共 stages =====
+# ===== GitHub 同步公共 stages（自动版：当前分支 + tags） =====
 .sync-github: &sync-github
   - name: validate-github-credentials
     script: |
@@ -51,8 +67,51 @@
       git push github --tags --force 2>&1 || echo "WARN: failed to push some tags"
 
 ## ============================================================
-## 云原生开发环境 — 打开开发环境时自动执行
-## 参考: https://cnb.cool/cnb/cool/default-dev-env
+## dev 分支：push 自动 → 部署预发环境 + 同步 GitHub
+## ============================================================
+dev:
+  push:
+    - name: deploy-preview
+      <<: *node-env
+      imports:
+        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
+      stages: *deploy-preview
+
+    - name: sync-to-github
+      docker:
+        image: alpine/git:v2.45.2
+      imports:
+        - https://cnb.cool/shisheng820/git-key/-/blob/main/git-push.yml
+      env:
+        GITHUB_REPO: textdb-edgeone
+      stages: *sync-github
+
+## ============================================================
+## main 分支：push 自动 → 部署生产环境 + 同步 GitHub
+## ============================================================
+main:
+  push:
+    - name: deploy-production
+      <<: *node-env
+      imports:
+        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
+      stages: *deploy-production
+
+    - name: sync-to-github
+      docker:
+        image: alpine/git:v2.45.2
+      imports:
+        - https://cnb.cool/shisheng820/git-key/-/blob/main/git-push.yml
+      env:
+        GITHUB_REPO: textdb-edgeone
+      stages: *sync-github
+
+## ============================================================
+## $ 兜底（其他分支）+ 手动触发
+##   其他分支 push → 只同步 GitHub（不自动部署）
+##   手动触发按钮可见性由 .cnb/web_trigger.yml 控制：
+##     - main：部署到生产 / 部署到预发 / 同步 GitHub
+##     - 其他分支：部署到预发 / 同步 GitHub
 ## ============================================================
 $:
   vscode:
@@ -70,21 +129,8 @@ $:
           - name: verify build
             script: npm run typecheck && npm run lint
 
-## ============================================================
-## main/dev 分支：
-##   push 自动触发：部署 EdgeOne Pages + 同步 GitHub（并行）
-##   手动触发按钮（见 .cnb/web_trigger.yml）：
-##     - 部署到 EdgeOne（web_trigger_deploy）
-##     - 同步到 GitHub（web_trigger_sync）
-## ============================================================
-"(main|dev)":
+  ## 其他分支 push → 只同步 GitHub
   push:
-    - name: deploy-to-edgeone
-      <<: *node-env
-      imports:
-        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
-      stages: *deploy-edgeone
-
     - name: sync-to-github
       docker:
         image: alpine/git:v2.45.2
@@ -94,15 +140,23 @@ $:
         GITHUB_REPO: textdb-edgeone
       stages: *sync-github
 
-  ## 手动触发：部署到 EdgeOne Pages
-  web_trigger_deploy:
-    - name: deploy-to-edgeone-manual
+  ## 手动触发：部署预发（main + 其他分支显示）
+  web_trigger_deploy_preview:
+    - name: deploy-preview-manual
       <<: *node-env
       imports:
         - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
-      stages: *deploy-edgeone
+      stages: *deploy-preview
 
-  ## 手动触发：同步到 GitHub（支持运行变量控制推送行为）
+  ## 手动触发：部署生产（仅 main 显示）
+  web_trigger_deploy_production:
+    - name: deploy-production-manual
+      <<: *node-env
+      imports:
+        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
+      stages: *deploy-production
+
+  ## 手动触发：同步到 GitHub（main + 其他分支显示，支持运行变量）
   web_trigger_sync:
     - name: sync-to-github-manual
       docker:
