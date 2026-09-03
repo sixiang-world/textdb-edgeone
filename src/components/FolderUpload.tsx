@@ -9,15 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronUp, Copy, ExternalLink, FolderOpen, Eye, EyeOff, Loader2, Shuffle, Upload } from "lucide-react";
-import { uploadFile } from "@/api";
-import { recordKey } from "@/lib/keyHistory";
+import { enqueue } from "@/lib/writeQueue";
 import { pathToKey, rewriteRefs, isBinary } from "@/lib/folderUtils";
 import type { UploadItem, UploadResult } from "@/lib/folderUtils";
 import { toast } from "sonner";
 
 const BASE = location.origin;
 
-export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
+export function FolderUpload() {
   const [prefix, setPrefix] = useState("");
   const [files, setFiles] = useState<UploadItem[]>([]);
   const [reading, setReading] = useState(false);      // loading indicator while FileReader is working
@@ -115,7 +114,7 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
     e.target.value = "";
   }
 
-  async function handleUpload() {
+  function handleUpload() {
     if (files.length === 0) return toast.error("请先选择文件夹");
     setUploading(true);
     setProgress({ done: 0, total: files.length });
@@ -146,25 +145,39 @@ export function FolderUpload({ onStatsRefresh }: { onStatsRefresh?: () => void }
       return f;
     });
 
-    // Upload one-by-one (respect rate limits, track progress)
-    const allResults: UploadResult[] = [];
+    // 加入写入队列（串行执行，自动重试）
     const pwd = password || undefined;
-    for (let i = 0; i < rewritten.length; i++) {
-      const res = await uploadFile(rewritten[i], pwd);
-      allResults.push(res);
-      if (res.success) recordKey(res.key);
-      setProgress({ done: i + 1, total: rewritten.length });
+    let doneCount = 0;
+    const resultsAccum: UploadResult[] = [];
+    for (const f of rewritten) {
+      enqueue({
+        type: "upload",
+        key: f.key,
+        fileName: f.name,
+        fileRelativePath: f.relativePath,
+        fileContent: f.content,
+        fileSize: f.content.length,
+        password: pwd,
+      }, {
+        onSuccess: () => {
+          resultsAccum.push({ key: f.key, name: f.name, success: true });
+          doneCount++;
+          setProgress({ done: doneCount, total: rewritten.length });
+          setResults([...resultsAccum]);
+        },
+        onError: (item) => {
+          resultsAccum.push({ key: f.key, name: f.name, success: false, error: item.lastError });
+          doneCount++;
+          setProgress({ done: doneCount, total: rewritten.length });
+          setResults([...resultsAccum]);
+        },
+      });
     }
 
-    setResults(allResults);
     setUploading(false);
+    toast.info(`已加入上传队列: ${rewritten.length} 个文件`);
 
-    const succeeded = allResults.filter(r => r.success).length;
-    const failed = allResults.filter(r => !r.success).length;
-    toast.success(`上传完成: ${succeeded} 成功${failed > 0 ? `, ${failed} 失败` : ""}`);
-    onStatsRefresh?.();
-
-    // Find entry point (index.html)
+    // Find entry point (index.html) — key 已确定，可立即设置
     const entry = rewritten.find(
       f => f.relativePath.endsWith("/index.html") || f.relativePath === "index.html"
     );

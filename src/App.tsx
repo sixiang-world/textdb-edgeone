@@ -4,9 +4,13 @@ import { FolderPage } from "@/components/pages/FolderPage";
 import { ApiDocsPage } from "@/components/pages/ApiDocsPage";
 import { ChangelogPage } from "@/components/pages/ChangelogPage";
 import { MdRenderer } from "@/components/MdRenderer";
+import { QueueStatus } from "@/components/QueueStatus";
 import { Toaster } from "@/components/ui/sonner";
 import { Layout, type NavItem } from "@/components/Layout";
 import { getStats, type Stats } from "@/api";
+import { initQueue } from "@/lib/writeQueue";
+import { recordKey } from "@/lib/keyHistory";
+import { toast } from "sonner";
 
 const NAV_ITEMS = ["operate", "folder", "api", "changelog"] as const;
 
@@ -38,6 +42,29 @@ export default function App() {
     setStatsRefreshTrigger((n) => n + 1);
   }
 
+  // 初始化写入队列（全局回调：toast + 记录 key + 刷新统计）
+  useEffect(() => {
+    initQueue({
+      onSuccess: (item) => {
+        if (item.type === "write") {
+          recordKey(item.key, item.value ? new TextEncoder().encode(item.value).length : undefined);
+          toast.success("写入成功");
+        } else if (item.type === "delete") {
+          toast.success("已删除");
+        } else if (item.type === "upload") {
+          toast.success(`上传成功: ${item.fileName || item.key}`);
+        }
+        onStatsRefresh();
+        // 通知 KeyHistory 刷新
+        window.dispatchEvent(new CustomEvent("textdb:history-refresh"));
+      },
+      onError: (item) => {
+        const action = item.type === "write" ? "写入" : item.type === "delete" ? "删除" : "上传";
+        toast.error(`${action}失败: ${item.lastError || "未知错误"}（已加入重试队列）`);
+      },
+    });
+  }, []);
+
   // /md/{key} 路由 — SPA 自行解析
   if (window.location.pathname.startsWith("/md/")) {
     return (
@@ -51,9 +78,9 @@ export default function App() {
   const renderContent = () => {
     switch (activeNav) {
       case "operate":
-        return <OperatePage onStatsRefresh={onStatsRefresh} />;
+        return <OperatePage />;
       case "folder":
-        return <FolderPage onStatsRefresh={onStatsRefresh} />;
+        return <FolderPage />;
       case "api":
         return <ApiDocsPage />;
       case "changelog":
@@ -70,6 +97,7 @@ export default function App() {
       writesToday={stats?.writesToday}
     >
       {renderContent()}
+      <QueueStatus />
       <Toaster />
     </Layout>
   );

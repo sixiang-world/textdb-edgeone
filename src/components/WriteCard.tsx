@@ -25,8 +25,8 @@ import {
   Upload,
 } from "lucide-react";
 import { QrCode } from "@/components/QrCode";
-import { writeData, deleteData, readData } from "@/api";
-import { recordKey, removeKey } from "@/lib/keyHistory";
+import { readData } from "@/api";
+import { enqueue } from "@/lib/writeQueue";
 import { toast } from "sonner";
 
 const BASE = location.origin;
@@ -87,7 +87,7 @@ function looksLikeJs(value: string): boolean {
   );
 }
 
-export function WriteCard({ onStatsRefresh, selectedKey }: { onStatsRefresh?: () => void; selectedKey?: string }) {
+export function WriteCard({ selectedKey }: { selectedKey?: string }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -144,75 +144,48 @@ export function WriteCard({ onStatsRefresh, selectedKey }: { onStatsRefresh?: ()
     e.target.value = "";
   }
 
-  async function handleWrite() {
+  function handleWrite() {
     if (!key) return toast.error("请输入 Key");
     if (!value) return toast.error("请输入内容");
-    setLoadingOp("write");
-    setResult("");
-    setSourceUrl("");
-    setRenderUrl("");
-    setJsUrl("");
-    try {
-      const pwd = password || undefined;
-      let npwd: string | undefined;
-      if (removePassword) {
-        npwd = '';
-      } else if (showPwdOptions && newPasswordTouched && newPassword.length > 0) {
-        npwd = newPassword;
-      }
-      const d = await writeData(key, value, pwd, npwd);
-      setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) {
+    const pwd = password || undefined;
+    let npwd: string | undefined;
+    if (removePassword) {
+      npwd = '';
+    } else if (showPwdOptions && newPasswordTouched && newPassword.length > 0) {
+      npwd = newPassword;
+    }
+    enqueue({ type: "write", key, value, password: pwd, newPassword: npwd }, {
+      onSuccess: () => {
         setSourceUrl(`${BASE}/${key}`);
-        if (looksLikeHtml(value)) {
-          setRenderUrl(`${BASE}/p/${key}`);
-        }
-        if (looksLikeJs(value)) {
-          setJsUrl(`${BASE}/file/js/${key}`);
-        }
-        // 写入成功：清除新密码相关状态
+        if (looksLikeHtml(value)) setRenderUrl(`${BASE}/p/${key}`);
+        if (looksLikeJs(value)) setJsUrl(`${BASE}/file/js/${key}`);
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setRemovePassword(false);
-        recordKey(key, new TextEncoder().encode(value).length);
-        toast.success("写入成功");
-        onStatsRefresh?.();
-      } else toast.error(d.error || "写入失败");
-    } catch (e: unknown) {
-      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setLoadingOp(null);
-    }
+        setResult("");
+      },
+    });
+    toast.info("已加入写入队列");
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!key) return toast.error("请输入 Key");
-    setLoadingOp("delete");
-    setResult("");
-    setSourceUrl("");
-    setRenderUrl("");
-    setJsUrl("");
-    try {
-      const d = await deleteData(key, password || undefined);
-      setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) {
-        // 删除成功：清除所有密码相关状态
+    enqueue({ type: "delete", key, password: password || undefined }, {
+      onSuccess: () => {
         setPassword("");
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setShowPassword(false);
         setRemovePassword(false);
-        removeKey(key);
-        toast.success("已删除");
-        onStatsRefresh?.();
-      } else toast.error(d.error || "删除失败");
-    } catch (e: unknown) {
-      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setLoadingOp(null);
-    }
+        setResult("");
+        setSourceUrl("");
+        setRenderUrl("");
+        setJsUrl("");
+      },
+    });
+    toast.info("已加入删除队列");
   }
 
   async function handleRead(readKey?: string) {
