@@ -16,7 +16,7 @@
 # ===== 公共配置：Node 构建环境 =====
 .node-env: &node-env
   docker:
-    image: node:22-alpine
+    image: node:22
 
 # ===== EdgeOne Pages 部署：预发环境 =====
 # 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
