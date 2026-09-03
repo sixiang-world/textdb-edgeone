@@ -14,6 +14,9 @@
 ## ============================================================
 
 # ===== 公共配置：Node 构建环境 =====
+# 使用 node:22（Debian 完整镜像）而非 node:22-alpine：
+# alpine 自带 npm 10.8.x 存在 arborist loadPeerSet bug (npm/cli#9787)，
+# 安装 edgeone CLI 时会崩溃 "Cannot read properties of null (reading 'edgesOut')"
 .node-env: &node-env
   docker:
     image: node:22
@@ -29,9 +32,15 @@
         echo "请在 EdgeOne Pages 控制台创建 API Token 并加入密钥仓库"
         exit 78
       fi
+  - name: install-edgeone-cli
+    script: |
+      # npm v10.8.x arborist loadPeerSet bug (npm/cli#9787)：npx 临时安装 edgeone 会崩溃
+      # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
+      npm config set legacy-peer-deps true
+      npm install -g edgeone --legacy-peer-deps
   - name: 部署到 EdgeOne Pages 预发环境
     script: |
-      npx --yes edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
+      edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== EdgeOne Pages 部署：生产环境 =====
 .deploy-production: &deploy-production
@@ -42,9 +51,15 @@
         echo "请在 EdgeOne Pages 控制台创建 API Token 并加入密钥仓库"
         exit 78
       fi
+  - name: install-edgeone-cli
+    script: |
+      # npm v10.8.x arborist loadPeerSet bug (npm/cli#9787)：npx 临时安装 edgeone 会崩溃
+      # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
+      npm config set legacy-peer-deps true
+      npm install -g edgeone --legacy-peer-deps
   - name: 部署到 EdgeOne Pages 生产环境
     script: |
-      npx --yes edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
+      edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== GitHub 同步公共 stages（自动版：当前分支 + tags） =====
 .sync-github: &sync-github
