@@ -1,12 +1,16 @@
-## 自定义手动触发按钮 — CNB → GitHub 镜像同步
-## 在仓库页面（main/dev 分支）显示"同步到 GitHub"按钮
-## 点击后触发 .cnb.yml 中的 web_trigger_sync 事件流水线
-## 按钮输入值通过同名环境变量传入流水线脚本（PUSH_BRANCH / FORCE_PUSH / PUSH_TAGS / DRY_RUN）
+## 自定义手动触发按钮 — CNB → EdgeOne Pages 部署 + GitHub 镜像同步
+## 在仓库页面（main/dev 分支）显示手动按钮
+## 点击后触发 .cnb.yml 中的对应事件流水线
+## 按钮输入值通过同名环境变量传入流水线脚本
 branch:
   - reg: ^(main|dev)$
     buttons:
+      - name: 部署到 EdgeOne
+        description: 构建并部署到 EdgeOne Pages（项目 textdb-edgeone），由 CNB 触发，不依赖 GitHub
+        event: web_trigger_deploy
+
       - name: 同步到 GitHub
-        description: 手动将 CNB 分支同步到 GitHub（触发 EdgeOne Pages 自动部署）
+        description: 手动将 CNB 分支同步到 GitHub
         event: web_trigger_sync
         inputs:
           PUSH_BRANCH:

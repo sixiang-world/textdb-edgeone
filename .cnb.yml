@@ -1,10 +1,54 @@
-## 将 CNB 仓库镜像同步到 GitHub，触发 EdgeOne Pages 自动部署
-## 凭证通过 imports 从密钥仓库导入（shisheng820/git-key 仓库的 git-push.yml）：
-##   GIT_PUSH_USER   - GitHub 用户名
-##   GIT_PUSH_TOKEN  - GitHub Personal Access Token（需 repo 权限）
-## GitHub 仓库名与 CNB 同名（textdb-edgeone），如不同请修改下方 GITHUB_REPO 变量
+## ============================================================
+## textdb-edgeone — CNB 流水线
+## 参考 simplereader 的 .cnb.yml 工作流结构
 ##
-## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
+## 部署链路：CNB（push 或手动按钮）→ 部署 EdgeOne Pages + 镜像 GitHub
+## 由 CNB 触发部署，不再依赖 GitHub push 自动触发 EdgeOne
+##
+## 密钥仓库：
+##   - shisheng820/secret  → edgeone.yml 提供 EDGEONE_PAGES_API_TOKEN
+##   - shisheng820/git-key → git-push.yml 提供 GIT_PUSH_USER / GIT_PUSH_TOKEN
+## ============================================================
+
+# ===== 公共配置：Node 构建环境 =====
+.node-env: &node-env
+  docker:
+    image: node:22-alpine
+
+# ===== EdgeOne Pages 部署公共 stages =====
+# 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
+# （自动执行 npm install + npm run build，并打包 edge-functions 一起上传）
+.deploy-edgeone: &deploy-edgeone
+  - name: validate-edgeone-token
+    script: |
+      if [ -z "$EDGEONE_PAGES_API_TOKEN" ]; then
+        echo "ERROR: EDGEONE_PAGES_API_TOKEN 未配置（需通过 secret/edgeone.yml imports 导入）"
+        echo "请在 EdgeOne Pages 控制台创建 API Token 并加入密钥仓库"
+        exit 78
+      fi
+  - name: 部署到 EdgeOne Pages
+    script: |
+      npx --yes edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
+
+# ===== GitHub 同步公共 stages =====
+.sync-github: &sync-github
+  - name: validate-github-credentials
+    script: |
+      if [ -z "$GIT_PUSH_USER" ] || [ -z "$GIT_PUSH_TOKEN" ]; then
+        echo "ERROR: GIT_PUSH_USER / GIT_PUSH_TOKEN 未配置（需通过 git-key imports 导入）"
+        exit 78
+      fi
+  - name: add-github-remote
+    script: |
+      git remote add github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git" 2>/dev/null || \
+        git remote set-url github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git"
+  - name: push-branch-and-tags
+    script: |
+      BRANCH="${CNB_BRANCH}"
+      echo "Pushing branch: ${BRANCH}"
+      git push github "${BRANCH}" --force 2>&1 || echo "WARN: failed to push branch ${BRANCH}"
+      echo "Pushing all tags..."
+      git push github --tags --force 2>&1 || echo "WARN: failed to push some tags"
 
 ## ============================================================
 ## 云原生开发环境 — 打开开发环境时自动执行
@@ -27,41 +71,38 @@ $:
             script: npm run typecheck && npm run lint
 
 ## ============================================================
-## 分支匹配：glob 分组 "(main|dev)" 匹配 main 或 dev 分支
-## push 事件：push 自动同步到 GitHub（触发 EdgeOne Pages 自动部署）
-## web_trigger_sync 事件：手动触发按钮（按钮定义见 .cnb/web_trigger.yml）
+## main/dev 分支：
+##   push 自动触发：部署 EdgeOne Pages + 同步 GitHub（并行）
+##   手动触发按钮（见 .cnb/web_trigger.yml）：
+##     - 部署到 EdgeOne（web_trigger_deploy）
+##     - 同步到 GitHub（web_trigger_sync）
 ## ============================================================
 "(main|dev)":
   push:
+    - name: deploy-to-edgeone
+      <<: *node-env
+      imports:
+        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
+      stages: *deploy-edgeone
+
     - name: sync-to-github
-      runner:
-        cpus: 1
       docker:
         image: alpine/git:v2.45.2
       imports:
         - https://cnb.cool/shisheng820/git-key/-/blob/main/git-push.yml
       env:
         GITHUB_REPO: textdb-edgeone
-      stages:
-        - name: mirror-to-github
-          script: |
-            set -e
-            echo "同步分支 ${CNB_BRANCH} 到 GitHub: ${GIT_PUSH_USER}/${GITHUB_REPO}"
-            # 配置 GitHub 远程仓库（使用 token 认证）
-            git remote add github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git" 2>/dev/null || \
-              git remote set-url github "https://${GIT_PUSH_USER}:${GIT_PUSH_TOKEN}@github.com/${GIT_PUSH_USER}/${GITHUB_REPO}.git"
-            # 推送当前分支与所有标签到 GitHub
-            git push github "HEAD:${CNB_BRANCH}" --force --tags
-            echo "✅ 已同步到 GitHub"
+      stages: *sync-github
 
-  ## 手动触发：CNB → GitHub 镜像同步（参考 simplereader 工作流）
-  ## 在仓库页面通过 .cnb/web_trigger.yml 定义的"同步到 GitHub"按钮触发
-  ## 支持运行变量控制推送行为：
-  ##   PUSH_BRANCH  - 指定要推送的分支（空格分隔），默认推送所有本地分支
-  ##   FORCE_PUSH   - 设为 true 时使用 --force 强制推送
-  ##   PUSH_TAGS    - 设为 false 时跳过标签推送
-  ##   DRY_RUN      - 设为 true 时只打印将执行的操作，不实际推送
-  ## 凭证与 push 自动同步一致：通过 imports 从 git-key 密钥仓库导入
+  ## 手动触发：部署到 EdgeOne Pages
+  web_trigger_deploy:
+    - name: deploy-to-edgeone-manual
+      <<: *node-env
+      imports:
+        - https://cnb.cool/shisheng820/secret/-/blob/main/edgeone.yml
+      stages: *deploy-edgeone
+
+  ## 手动触发：同步到 GitHub（支持运行变量控制推送行为）
   web_trigger_sync:
     - name: sync-to-github-manual
       docker:
@@ -75,14 +116,8 @@ $:
           script: |
             if [ -z "$GIT_PUSH_USER" ] || [ -z "$GIT_PUSH_TOKEN" ]; then
               echo "ERROR: GIT_PUSH_USER / GIT_PUSH_TOKEN 未配置（需通过 git-key imports 导入）"
-              echo "Please check CNB pipeline imports"
               exit 78
             fi
-
-        - name: configure-git
-          script: |
-            git config user.name "cnb-sync[bot]"
-            git config user.email "cnb-sync[bot]@users.noreply.github.com"
 
         - name: add-github-remote
           script: |
