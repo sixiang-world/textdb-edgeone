@@ -149,6 +149,10 @@ export function FolderUpload() {
     const pwd = password || undefined;
     let doneCount = 0;
     const resultsAccum: UploadResult[] = [];
+    const total = rewritten.length;
+    function checkDone() {
+      if (doneCount >= total) setUploading(false);
+    }
     for (const f of rewritten) {
       enqueue({
         type: "upload",
@@ -162,19 +166,20 @@ export function FolderUpload() {
         onSuccess: () => {
           resultsAccum.push({ key: f.key, name: f.name, success: true });
           doneCount++;
-          setProgress({ done: doneCount, total: rewritten.length });
+          setProgress({ done: doneCount, total });
           setResults([...resultsAccum]);
+          checkDone();
         },
         onError: (item) => {
           resultsAccum.push({ key: f.key, name: f.name, success: false, error: item.lastError });
           doneCount++;
-          setProgress({ done: doneCount, total: rewritten.length });
+          setProgress({ done: doneCount, total });
           setResults([...resultsAccum]);
+          checkDone();
         },
       });
     }
 
-    setUploading(false);
     toast.info(`已加入上传队列: ${rewritten.length} 个文件`);
 
     // Find entry point (index.html) — key 已确定，可立即设置

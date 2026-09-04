@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   discardItem,
+  MAX_RETRIES,
   retryAll,
   retryItem,
   subscribe,
@@ -93,7 +94,7 @@ export function QueueStatus() {
                   )}
                   {item.status !== "error" && item.retryCount > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      重试中 ({item.retryCount}/{3})
+                      重试中 ({item.retryCount}/{MAX_RETRIES})
                     </div>
                   )}
                 </div>

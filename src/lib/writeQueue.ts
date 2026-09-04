@@ -14,7 +14,7 @@ import type { UploadItem } from "@/lib/folderUtils";
 const DB_NAME = "textdb";
 const DB_VERSION = 1;
 const STORE = "write-queue";
-const MAX_RETRIES = 3;
+export const MAX_RETRIES = 3;
 
 export type QueueItemType = "write" | "delete" | "upload";
 export type QueueItemStatus = "pending" | "processing" | "error";
@@ -67,6 +67,7 @@ let isProcessing = false;
 let callbacks: QueueCallbacks = { onSuccess: () => {}, onError: () => {} };
 const listeners = new Set<Listener>();
 const pendingCallbacks = new Map<string, { onSuccess?: (item: QueueItem) => void; onError?: (item: QueueItem) => void }>();
+let onlineListenerRegistered = false;
 
 // --- 工具函数 ---
 
@@ -235,8 +236,11 @@ export function initQueue(cb: QueueCallbacks) {
         item.updatedAt = Date.now();
         await db.put(STORE, item);
       }
-      // 恢复网络时继续处理
-      window.addEventListener("online", () => processQueue());
+      // 恢复网络时继续处理（只注册一次）
+      if (!onlineListenerRegistered) {
+        window.addEventListener("online", () => processQueue());
+        onlineListenerRegistered = true;
+      }
       processQueue();
       notifySubscribers();
     } catch {
@@ -247,7 +251,7 @@ export function initQueue(cb: QueueCallbacks) {
 }
 
 /** 入队一个操作 */
-export function enqueue(input: EnqueueInput, opts?: { onSuccess?: (item: QueueItem) => void; onError?: (item: QueueItem) => void }) {
+export async function enqueue(input: EnqueueInput, opts?: { onSuccess?: (item: QueueItem) => void; onError?: (item: QueueItem) => void }) {
   if (!available || !db) {
     fallbackEnqueue(input, opts);
     return;
@@ -275,7 +279,14 @@ export function enqueue(input: EnqueueInput, opts?: { onSuccess?: (item: QueueIt
     item.password = input.password;
   }
   if (opts) pendingCallbacks.set(item.id, opts);
-  db.add(STORE, item);
+  try {
+    await db.add(STORE, item);
+  } catch {
+    // IndexedDB 写入失败（如配额超限），降级为直接调用
+    pendingCallbacks.delete(item.id);
+    fallbackEnqueue(input, opts);
+    return;
+  }
   notifySubscribers();
   processQueue();
 }

@@ -10,6 +10,7 @@ import { Layout, type NavItem } from "@/components/Layout";
 import { getStats, type Stats } from "@/api";
 import { initQueue } from "@/lib/writeQueue";
 import { recordKey } from "@/lib/keyHistory";
+import { HISTORY_REFRESH_EVENT } from "@/components/KeyHistory";
 import { toast } from "sonner";
 
 const NAV_ITEMS = ["operate", "folder", "api", "changelog"] as const;
@@ -56,7 +57,7 @@ export default function App() {
         }
         onStatsRefresh();
         // 通知 KeyHistory 刷新
-        window.dispatchEvent(new CustomEvent("textdb:history-refresh"));
+        window.dispatchEvent(new CustomEvent(HISTORY_REFRESH_EVENT));
       },
       onError: (item) => {
         const action = item.type === "write" ? "写入" : item.type === "delete" ? "删除" : "上传";

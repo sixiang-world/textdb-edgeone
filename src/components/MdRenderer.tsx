@@ -33,6 +33,7 @@ function MermaidBlock({ chart }: { chart: string }) {
         mermaid.initialize({
           startOnLoad: false,
           theme: isDark ? "dark" : "default",
+          securityLevel: "strict",
         });
         const id = "mermaid-" + Math.random().toString(36).slice(2);
         const result = await mermaid.render(id, chart);

@@ -92,6 +92,7 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [loadingOp, setLoadingOp] = useState<"write" | "read" | "delete" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
@@ -147,6 +148,8 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
   function handleWrite() {
     if (!key) return toast.error("请输入 Key");
     if (!value) return toast.error("请输入内容");
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const pwd = password || undefined;
     let npwd: string | undefined;
     if (removePassword) {
@@ -159,11 +162,17 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
         setSourceUrl(`${BASE}/${key}`);
         if (looksLikeHtml(value)) setRenderUrl(`${BASE}/p/${key}`);
         if (looksLikeJs(value)) setJsUrl(`${BASE}/file/js/${key}`);
+        setPassword("");
+        setShowPassword(false);
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setRemovePassword(false);
         setResult("");
+        setIsSubmitting(false);
+      },
+      onError: () => {
+        setIsSubmitting(false);
       },
     });
     toast.info("已加入写入队列");
@@ -171,6 +180,8 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
 
   function handleDelete() {
     if (!key) return toast.error("请输入 Key");
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     enqueue({ type: "delete", key, password: password || undefined }, {
       onSuccess: () => {
         setPassword("");
@@ -183,6 +194,10 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
         setSourceUrl("");
         setRenderUrl("");
         setJsUrl("");
+        setIsSubmitting(false);
+      },
+      onError: () => {
+        setIsSubmitting(false);
       },
     });
     toast.info("已加入删除队列");
@@ -227,6 +242,8 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
       toast.error("复制失败，请手动复制");
     }
   }
+
+  const btnDisabled = loadingOp !== null || isSubmitting;
 
   return (
     <Card>
@@ -392,16 +409,16 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
         </p>
 
         <div className="flex gap-2 flex-wrap items-center">
-          <Button onClick={handleWrite} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
-            {loadingOp === "write" ? <Loader2 className="animate-spin" /> : <Upload />}
+          <Button onClick={handleWrite} disabled={btnDisabled} className="flex-1 sm:flex-none">
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <Upload />}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
+          <Button variant="outline" onClick={handleRead} disabled={btnDisabled} className="flex-1 sm:flex-none">
             {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
             读取
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
-            {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          <Button variant="outline" onClick={handleDelete} disabled={btnDisabled} className="flex-1 sm:flex-none">
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
         </div>

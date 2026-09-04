@@ -14,13 +14,19 @@ export function ApiDocs() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/openapi.json")
+    const controller = new AbortController();
+    fetch("/openapi.json", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(setSpec)
-      .catch((e) => setError(e.message || String(e)));
+      .then((data) => {
+        if (!controller.signal.aborted) setSpec(data);
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted) setError(e.message || String(e));
+      });
+    return () => controller.abort();
   }, []);
 
   return (
