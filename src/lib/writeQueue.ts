@@ -115,7 +115,6 @@ async function processItem(item: QueueItem): Promise<void> {
         relativePath: item.fileRelativePath!,
         key: item.key,
         content: item.fileContent!,
-        size: item.fileSize!,
       };
       const res = await uploadFile(file, item.password);
       if (!res.success) throw new Error(res.error || "上传失败");
@@ -197,7 +196,6 @@ async function fallbackEnqueue(input: EnqueueInput, opts?: { onSuccess?: (item: 
         relativePath: input.fileRelativePath,
         key: input.key,
         content: input.fileContent,
-        size: input.fileSize,
       };
       const res = await uploadFile(file, input.password);
       if (res.success) { const it = { ...baseItem, fileName: input.fileName }; opts?.onSuccess?.(it); callbacks.onSuccess(it); }
@@ -253,7 +251,7 @@ export function initQueue(cb: QueueCallbacks) {
 /** 入队一个操作 */
 export async function enqueue(input: EnqueueInput, opts?: { onSuccess?: (item: QueueItem) => void; onError?: (item: QueueItem) => void }) {
   if (!available || !db) {
-    fallbackEnqueue(input, opts);
+    void fallbackEnqueue(input, opts);
     return;
   }
   const item: QueueItem = {
@@ -284,7 +282,7 @@ export async function enqueue(input: EnqueueInput, opts?: { onSuccess?: (item: Q
   } catch {
     // IndexedDB 写入失败（如配额超限），降级为直接调用
     pendingCallbacks.delete(item.id);
-    fallbackEnqueue(input, opts);
+    void fallbackEnqueue(input, opts);
     return;
   }
   notifySubscribers();

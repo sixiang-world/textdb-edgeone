@@ -91,7 +91,7 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
-  const [loadingOp, setLoadingOp] = useState<"write" | "read" | "delete" | null>(null);
+  const [loadingOp, setLoadingOp] = useState<"read" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
@@ -413,7 +413,7 @@ export function WriteCard({ selectedKey }: { selectedKey?: string }) {
             {isSubmitting ? <Loader2 className="animate-spin" /> : <Upload />}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={btnDisabled} className="flex-1 sm:flex-none">
+          <Button variant="outline" onClick={() => handleRead()} disabled={btnDisabled} className="flex-1 sm:flex-none">
             {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
             读取
           </Button>
