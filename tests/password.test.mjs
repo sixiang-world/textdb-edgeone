@@ -31,10 +31,19 @@ test("密码校验：同长度错误密码被拒（走逐字节比较分支）",
 
 test("密码校验：不同长度错误密码被拒（走长度短路分支）", async () => {
   const kv = await seedWithPassword("p", "pass1234");
-  for (const wrong of ["pass", "pass12345678", ""]) {
+  // 注意区分："" 不会进入 constantTimeEqual，而是在 checkPassword 的 `if (!password) return false`
+  // 与 verifyDeletePassword 的 `if (!inputPwd)` 处提前返回；只有非空且长度不同的才走长度短路分支。
+  for (const wrong of ["pass", "pass12345678"]) {
     const r = await call(kv, "/update/", jsonInit({ key: "p", value: "v2", password: wrong }));
-    assert.equal(r.status, 400, `错误密码 "${wrong}" 应被拒（不得因空值绕过）`);
+    assert.equal(r.status, 400, `错误密码 "${wrong}" 应被拒（长度不同）`);
   }
+});
+
+test("密码校验：空密码不得绕过保护（在进入哈希比较前即被拒）", async () => {
+  const kv = await seedWithPassword("p", "pass1234");
+  const r = await call(kv, "/update/", jsonInit({ key: "p", value: "v2", password: "" }));
+  assert.equal(r.status, 400, "空密码应被拒（不得因空值绕过）");
+  assert.notEqual((await readJSON(r)).status, 1, "不得返回成功");
 });
 
 test("密码校验：未提供密码时受保护的 key 不可改", async () => {

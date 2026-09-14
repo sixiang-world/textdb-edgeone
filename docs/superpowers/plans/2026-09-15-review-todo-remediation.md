@@ -277,7 +277,7 @@ test("DELETE 删除无密码保护的 key", async () => {
 
 ---
 
-## Phase 1：密码哈希比较改为恒定时间（P1-2）⏳ 待执行
+## Phase 1：密码哈希比较改为恒定时间（P1-2）✅ 已完成（2026-09-15，提交 `38f0b4d` + 文档对齐）
 
 > 「恒定时间比较」是**重构**，不改变可观测行为，因此本 Phase 用 Phase 0 的测试做**回归护栏**：先让测试全绿，重构后必须仍全绿（TDD 的 red→green→refactor 中的 refactor 阶段）。
 
@@ -288,10 +288,11 @@ test("DELETE 删除无密码保护的 key", async () => {
 - Regenerate: `edge-functions/[[default]].js`（经 `npm run build`）
 - Test: `npm test`（回归护栏：改动前后都必须全绿）
 
-- [ ] 在 `build-edge.cjs` 的 `sha256Hex`（第 85 行 `"}"`,）之后插入：
+- [x] 在 `build-edge.cjs` 的 `sha256Hex` 之后（`getPasswordMeta` 之前）插入（已实现，`build-edge.cjs:87-95`）：
 
 ```js
-  "// 恒定时间比较：避免因提前返回泄露哈希前缀信息（Edge Functions 无现成实现）",
+  "// 恒定时间比较：避免因提前返回而泄露哈希前缀信息",
+  "// （Edge Functions 无现成实现，手写；长度不等时直接返回 false 可接受——哈希长度固定 64 字符 hex）",
   "function constantTimeEqual(a, b) {",
   "  if (typeof a !== 'string' || typeof b !== 'string') return false;",
   "  if (a.length !== b.length) return false;",
@@ -305,15 +306,17 @@ test("DELETE 删除无密码保护的 key", async () => {
 
 ### Task 1.2：替换两处比较
 
-- [ ] `build-edge.cjs:98`：`"  return hash === meta.h;",` → `"  return constantTimeEqual(hash, meta.h);",`
-- [ ] `build-edge.cjs:117`：`"  if (hash !== meta.h) return 'Incorrect password';",` → `"  if (!constantTimeEqual(hash, meta.h)) return 'Incorrect password';",`
+- [x] `build-edge.cjs`（`checkPassword`）：`return hash === meta.h;` → `return constantTimeEqual(hash, meta.h);`
+- [x] `build-edge.cjs`（`verifyDeletePassword`）：`if (hash !== meta.h) return 'Incorrect password';` → `if (!constantTimeEqual(hash, meta.h)) return 'Incorrect password';`
 
 ### Task 1.3：验证
 
-- [ ] `npm run build` → 观察输出 `✅ build-edge.cjs fixed with safe join.（边缘函数 NN KB / 上限 5 MB）`
-- [ ] `npm test` → **12 项全通过**（无行为变化）
-- [ ] 确认产物中无残留字符串比较：`grep -c "hash === meta.h\|hash !== meta.h" 'edge-functions/[[default]].js'` → **0**
-- [ ] 提交：`git commit -m "refactor(edge): 密码哈希比较改为恒定时间实现"`
+- [x] `npm run build` → 输出 `✅ build-edge.cjs fixed with safe join.（边缘函数 20 KB / 上限 5 MB）`
+- [x] `npm test` → **全通过**（重构，无行为变化；Phase 0 基线 24 项 → 本 Phase 追加密码用例后共 31 项）
+- [x] 确认产物中无残留字符串比较：`grep -c "hash === meta.h\|hash !== meta.h" 'edge-functions/[[default]].js'` → **0**
+- [x] 提交：`38f0b4d refactor(edge): 密码哈希比较改为恒定时间（Phase 1）`
+
+> 实施补充（2026-09-15）：除规格要求的改动外，还新增 `tests/password.test.mjs` 以钉住 `constantTimeEqual` 的两个分支（同长度错误 → 逐字节比较；非空且不同长度 → 长度短路），并区分出「空密码在进入哈希比较**之前**即被拒」这一独立路径。另核实并修正了密码来源的三条路径描述（详见 Phase 3 的「前提修正」）。
 
 ---
 
