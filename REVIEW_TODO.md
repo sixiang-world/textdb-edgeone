@@ -57,11 +57,13 @@
 - **现状**：写入路径 `inputPwd = params.password || header`（body 优先）；删除路径 `header || params.password`（header 优先）
 - **建议**：统一优先级（建议统一为 body 优先，与 API 文档 curl 示例一致）
 
-### 6. `Vary: User-Agent` 缓存碎片化观察
+### 6. 首页 AI 爬虫逻辑是死代码（2026-09-14 实测确认，结论已更新）
 
-- **位置**：`build-edge.cjs` 首页响应
-- **现状**：为区分 AI 爬虫与普通用户，首页加了 `Vary: User-Agent`，CDN 会按 UA 生成多个缓存条目
-- **建议**：上线后观察 EdgeOne 缓存命中率；如碎片化明显，可改为仅对爬虫 UA 设置 `Cache-Control: no-cache`，普通用户不设 Vary
+- **位置**：`build-edge.cjs` 中 `onRequest` 的 `if (path === '/' || path === '/index.html')` 分支
+- **现状**：该分支为区分 AI 爬虫与普通用户设置 `Vary: User-Agent`，并对爬虫返回 `Cache-Control: no-cache, private`。**但实测该分支从不执行**——`routes.json` 中 `{handle:"filesystem"}` 优先于函数，而 `dist/index.html` 是真实存在的静态文件，因此 `/` 与 `/index.html` 由平台静态托管直接返回
+- **证据**：真实响应头为平台默认的 `Vary: Origin, Access-Control-Request-Headers, Access-Control-Request-Method` 与 `Cache-Control: public,max-age=0,must-revalidate`（含平台计算的 `Etag`），**不含** `Vary: User-Agent`；无对应静态文件的路径（`/md/*`、`/stats`、`/p/*`）则走函数且无 `Vary` 头
+- **影响**：有限——静态 `index.html` 本身已内嵌 JSON-LD（AI 爬虫仍能读到正确内容），只是"给爬虫更短的缓存"这一意图未实现
+- **建议**：若要真正生效，有三条路——① 用 `edgeone.json` 的 `headers`/`rewrites` 声明；② 删除 `dist/index.html` 静态副本改由函数唯一提供（需确认平台不会因此退化 SPA fallback）；③ 直接移除这段死代码，避免误导。**决策前先不要动**，另注意原第 6 项的"缓存碎片化"担忧因此不成立
 
 ---
 

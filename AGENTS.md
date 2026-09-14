@@ -174,7 +174,7 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 > 注：Edge Functions 与 Cloud Functions 是两套体系，配额不同。本项目用的是 **Edge Functions**（V8 runtime，无 npm 包、无 Node 内置模块）。
 - `/p/` 的 CSP：`script-src 'unsafe-inline'`（有意为之——用户 HTML 需内联 JS；公开写入场景下确有 XSS 风险）
 - `/p/` 的 CSP：`connect-src 'none'`（渲染页内所有 fetch/XHR 被阻断）
-- 首页带 `Vary: User-Agent`（区分 AI 爬虫），注意 CDN 缓存碎片化
+- ⚠️ **`/` 与 `/index.html` 实际由平台静态托管返回，不经函数**：`routes.json` 的 `{handle:"filesystem"}` 优先于函数，而 `dist/index.html` 是真实存在的静态文件。因此函数内针对 `/` 的 `Vary: User-Agent` + AI 爬虫 `no-cache, private` 分支**在生产环境从不执行**（实测 `/` 的响应头是平台的 `Vary: Origin, Access-Control-Request-Headers, ...` 与 `Cache-Control: public,max-age=0,must-revalidate`，无 `Vary: User-Agent`）。只有无对应静态文件的路径（`/md/*`、`/stats`、`/p/*`、`/{key}` 等）才走函数。影响有限（静态 index.html 本身已含 JSON-LD），但该逻辑目前是死代码——见 `REVIEW_TODO.md`
 
 ## 踩坑记录（改部署/构建前必读）
 
