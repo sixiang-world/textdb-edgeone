@@ -3,6 +3,10 @@
 > 来源：dev → master 合并前 Code Review（2026-09-03）
 > 状态：以下为评审中发现的**非阻断性**改进项，按优先级排期处理。**以下各项均仍未处理。**
 >
+> **实施计划（2026-09-15 制定）：** [`docs/superpowers/plans/2026-09-15-review-todo-remediation.md`](docs/superpowers/plans/2026-09-15-review-todo-remediation.md)
+> —— 含 6 个 Phase、逐任务可执行步骤、测试基线方案（Node 内置 test runner，零依赖）、
+> 风险回退表与完成定义。其中 Phase 5 / Phase 6 需先做决策，Phase 0-4 可直接实施。
+>
 > 分支现状（2026-09-14 更新）：当时误把 dev 内容合并进 master（合并请求 #4），已回退——
 > master 现位于 `8d3f696`，误合并的那份备份在分支 `backup-master-5b3cdd9`。
 > dev 目前领先 master 若干部署相关修复（见 CHANGELOG.md 的 Unreleased），
