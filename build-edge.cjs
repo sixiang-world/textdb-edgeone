@@ -367,9 +367,24 @@ const edgeDir = path.join(__dirname, "edge-functions");
 if (!fs.existsSync(edgeDir)) fs.mkdirSync(edgeDir);
 fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 
-// 写入 .edgeone 部署目录（确保部署时使用最新 edge function）
-const edgeoneEdgeDir = path.join(__dirname, ".edgeone", "edge-functions");
+// 写入 .edgeone 部署目录（EdgeOne Pages 构建输出 API 规范）
+// 关键：edge function 文件名必须是 [[default]].js（catch-all），
+// 不能用 index.js（index.js 只匹配根路径 /，不匹配 /update/ /{key} /stats 等子路径）
+// 历史教训：1.3.0 切到 edgeone CLI 部署后，曾误用 index.js 导致所有非根路径 POST
+// 请求落到平台默认 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON，
+// 报错 "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+const edgeoneDir = path.join(__dirname, ".edgeone");
+if (!fs.existsSync(edgeoneDir)) fs.mkdirSync(edgeoneDir, { recursive: true });
+const edgeoneEdgeDir = path.join(edgeoneDir, "edge-functions");
 if (!fs.existsSync(edgeoneEdgeDir)) fs.mkdirSync(edgeoneEdgeDir, { recursive: true });
-fs.writeFileSync(path.join(edgeoneEdgeDir, "index.js"), edgeCode);
+fs.writeFileSync(path.join(edgeoneEdgeDir, "[[default]].js"), edgeCode);
+
+// 生成 config.json（EdgeOne Pages 构建输出 API 元信息）
+// 主要声明 version。路由本身由 edge-functions/[[default]].js catch-all 处理
+// （该文件名约定匹配所有路径，包括 /update/ /{key} /stats 等）
+const configJson = JSON.stringify({
+  version: 3
+}, null, 2);
+fs.writeFileSync(path.join(edgeoneDir, "config.json"), configJson);
 
 console.log("✅ build-edge.cjs fixed with safe join.");

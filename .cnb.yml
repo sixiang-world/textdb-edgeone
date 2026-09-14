@@ -23,7 +23,11 @@
 
 # ===== EdgeOne Pages 部署：预发环境 =====
 # 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
-# （自动执行 npm install + npm run build，并打包 edge-functions 一起上传）
+# 关键：必须显式 npm run build 生成 .edgeone 构建产物，然后部署 .edgeone 目录
+# （.edgeone 内含 edge-functions/[[default]].js catch-all + config.json）
+# 历史教训：1.3.0 曾用 `edgeone pages deploy`（无路径）依赖 CLI 自动构建，
+# 但自动构建没有正确生成 edge-functions/[[default]].js catch-all，
+# 导致 POST /update/ 等路径返回 HTML 而非 JSON（edge function 未被路由到）
 .deploy-preview: &deploy-preview
   - name: validate-edgeone-token
     script: |
@@ -38,9 +42,13 @@
       # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
       npm config set legacy-peer-deps true
       npm install -g edgeone --legacy-peer-deps
-  - name: 部署到 EdgeOne Pages 预发环境
+  - name: build-and-deploy-preview
     script: |
-      edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
+      # 显式构建生成 .edgeone 构建输出目录（含 edge-functions/[[default]].js catch-all）
+      npm install
+      npm run build
+      # 部署构建产物目录 .edgeone（不再依赖 CLI 自动构建，避免再次构建时漏掉 edge function）
+      edgeone pages deploy .edgeone -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== EdgeOne Pages 部署：生产环境 =====
 .deploy-production: &deploy-production
@@ -57,9 +65,13 @@
       # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
       npm config set legacy-peer-deps true
       npm install -g edgeone --legacy-peer-deps
-  - name: 部署到 EdgeOne Pages 生产环境
+  - name: build-and-deploy-production
     script: |
-      edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
+      # 显式构建生成 .edgeone 构建输出目录（含 edge-functions/[[default]].js catch-all）
+      npm install
+      npm run build
+      # 部署构建产物目录 .edgeone（不再依赖 CLI 自动构建，避免再次构建时漏掉 edge function）
+      edgeone pages deploy .edgeone -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== GitHub 同步公共 stages（自动版：当前分支 + tags） =====
 .sync-github: &sync-github
