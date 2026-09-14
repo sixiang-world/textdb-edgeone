@@ -2,7 +2,7 @@
 
 基于 **EdgeOne Pages + KV** 的在线文本数据库。匿名写入/读取，无用户系统、无登录、无注册。
 
-线上地址：https://text.hunluan.space/
+线上地址：https://textdb.hunluan.space/（preview 环境：https://text.hunluan.space/）
 
 ## 功能
 
@@ -33,14 +33,14 @@ npm run typecheck    # tsc --noEmit
 
 由 **CNB 流水线**（`.cnb.yml`）驱动，使用官方 `edgeone pages deploy` CLI。GitHub 仅作镜像同步。
 
-| 触发 | 目标环境 | 命令 |
-|---|---|---|
-| push `dev` | preview | `edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"` |
-| push `master` | production | `edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"` |
+| 触发 | 目标环境 | 域名 | 命令 |
+|---|---|---|---|
+| push `master` | production | **textdb.hunluan.space** | `edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"` |
+| push `dev` | preview | text.hunluan.space | `edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"` |
 
 `sync-to-github` 阶段把分支与 tag 强推到 GitHub 镜像仓库（CNB 是唯一真源）。
 
-> ⚠️ 线上域名 **https://text.hunluan.space/ 绑定的是 dev 分支的部署（preview 环境）**，即 dev 一 push 就会影响线上访问，改部署相关代码需谨慎。`/test-kv` 与 `OPTIONS` 不在 OpenAPI 规范内。
+> ⚠️ 两个自定义域名各自绑定不同环境，且**都对外可用**：`textdb.hunluan.space` 绑 production，`text.hunluan.space` 绑 **preview**（dev 一 push 就会改变它的内容）。`/test-kv` 与 `OPTIONS` 不在 OpenAPI 规范内。
 
 ### 关键：部署命令不能带目录参数
 

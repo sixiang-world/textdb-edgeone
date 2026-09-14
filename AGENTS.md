@@ -2,7 +2,14 @@
 
 EdgeOne Pages + KV 在线文本数据库。匿名写入/读取，无用户系统。
 
-线上地址 https://text.hunluan.space/ **绑定的是 dev 分支的部署（preview 环境）** —— dev 一 push 就会影响线上，改部署相关代码时务必谨慎。
+两个自定义域名，**各自绑定不同的部署环境**（实测依据：`index.html` 的 `Last-Modified` 与 `EO-LOG-UUID` 均不同，内容一致是因为 dev 已合并到 master）：
+
+| 域名 | 绑定环境 | 由哪次 push 触发 |
+|---|---|---|
+| **https://textdb.hunluan.space/** | **production** | `master` push |
+| https://text.hunluan.space/ | preview | `dev` push |
+
+> ⚠️ 两个入口都对外可用，但 **`text.hunluan.space` 绑的是 preview** —— dev 一 push 就会改变这个域名上跑的内容，改部署相关代码时需谨慎。
 
 ## Commands
 
@@ -211,8 +218,9 @@ Tailwind v4 会扫描项目内所有未被 `.gitignore` 忽略的文件收集 cl
 ### 4. 部署后如何验证
 
 ```bash
-curl -s https://text.hunluan.space/stats      # 应返回 JSON，若返回平台 HTML 404 页则函数未生效
-curl -s https://text.hunluan.space/test-kv    # 应返回 {"status":"ok",...}
+curl -s https://textdb.hunluan.space/stats      # 生产：应返回 JSON，若返回平台 HTML 404 页则函数未生效
+curl -s https://textdb.hunluan.space/test-kv    # 生产：应返回 {"status":"ok",...}
+curl -s https://text.hunluan.space/stats        # 预发：同上
 ```
 
 `GET /nonexistent_key` 应返回**空 body 200**（函数行为），而不是 HTML 404 页（平台行为）。
