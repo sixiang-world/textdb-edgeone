@@ -383,4 +383,28 @@ fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 //   3) 曾 `edgeone pages deploy dist` 显式传目录 —— CLI 只做纯静态直传，
 //      不会读取仓库根 edge-functions/，导致线上 API 全部 404（后端丢失）。
 
-console.log("✅ build-edge.cjs fixed with safe join.");
+// 体积可见性：函数代码包绝不能把整个 dist 内联进来（见上方说明）。
+// 官方上限 5 MB / 单个函数；发布流水线在 .cnb.yml 中有对应的硬校验。
+// 这里只做本地提示，不阻断构建——超阈值的拦截交给 CI（避免本地误伤已有流程）。
+const edgeFnPath = path.join(__dirname, "edge-functions", "[[default]].js");
+if (fs.existsSync(edgeFnPath)) {
+  const kb = Math.round(fs.statSync(edgeFnPath).size / 1024);
+  const limitWarnKb = 256;
+  const limitFailKb = 5 * 1024;
+  if (kb > limitFailKb) {
+    console.warn(
+      `⚠️  边缘函数 ${kb} KB 已超过官方 5 MB 上限，部署会被 .cnb.yml 的校验中断！`
+    );
+    console.warn(
+      "   检查上方 staticFiles 是否误内联了 dist 下的静态资源（应只内联 index.html）。"
+    );
+  } else if (kb > limitWarnKb) {
+    console.warn(
+      `⚠️  边缘函数 ${kb} KB 超过 ${limitWarnKb} KB 预警线（正常约 19 KB），请确认未误内联静态资源。`
+    );
+  } else {
+    console.log(`✅ build-edge.cjs fixed with safe join.（边缘函数 ${kb} KB / 上限 5 MB）`);
+  }
+} else {
+  console.log("✅ build-edge.cjs fixed with safe join.");
+}

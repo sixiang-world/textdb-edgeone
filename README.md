@@ -108,11 +108,17 @@ edge-functions/[[default]].js ──►  .edgeone/edge-functions/index.js + conf
 
 ### 限制
 
-- KV key：`^[0-9a-zA-Z_]{1,512}$`，存储时统一加 `tdb_` 前缀
-- KV 单值上限：**≤ 5,242,879 字节**（实测 5,242,880 起 KV 报 `OverSize`），代码在 5 MiB 处提前拦截
-- 边缘函数**单函数代码包上限 5 MB**、**CPU 时间上限 200 ms**（平台限制，见下）
-- 请求 Body：官方文档标注 1 MB，实测 ≥ 5.24 MB 仍可处理，以实测为准
-- 边缘函数不可使用 npm 包与 Node.js 内置模块（fs / path / crypto），函数须导出 `onRequest` handler
+| 项 | 限制 | 备注 |
+|---|---|---|
+| KV key | `^[0-9a-zA-Z_]{1,512}$` | 存储时统一加 `tdb_` 前缀 |
+| KV 单值 | **≤ 5,242,879 字节** | 实测；5,242,880 起报 `OverSize`（官方文档写 1 MB，以实测为准）。代码在 5 MiB 处提前拦截 |
+| Edge Functions 代码包 | **5 MB / 单个函数** | 官方上限；CI 已加体积断言（见 `.cnb.yml`） |
+| Edge Functions CPU Time | 200 ms | 不含 I/O 等待 |
+| 请求 Body | 文档 1 MB（实测 ≥ 5.24 MB 可用） | 以实测为准 |
+| 单文件 / 单项目 | 25 MB / 20000 个 | 项目维度配额 |
+| Cloud Functions 代码包 | 128 MB（含依赖） | 本项目未使用（用的是 Edge Functions） |
+
+边缘函数不可使用 npm 包与 Node.js 内置模块（fs / path / crypto），必须导出 `onRequest` / `onRequestGet` 等 handler，平台不支持 `addEventListener`。
 
 ## 踩坑记录（改动部署相关代码前必读）
 

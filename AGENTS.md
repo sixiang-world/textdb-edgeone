@@ -150,11 +150,28 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 - KV list 返回 `{complete, cursor, keys: [{key}]}`，每页最多 256 条
 - KV key 正则 `^[0-9a-zA-Z_]{1,512}$`，存储时统一加 `tdb_` 前缀；内部计数器用 `__writes__YYYY-MM-DD`
 - KV 单值上限：**≤ 5,242,879 字节**（5,242,880 起 KV 报 `OverSize`），代码在 5 MiB 处提前拦截并返回友好错误
-- 边缘函数**单函数代码包上限 5 MB**（官方文档，2026-09 核对）
-- 边缘函数 **CPU 时间上限 200 ms**（不含 I/O 等待）
-- **请求 Body：官方文档标注上限 1 MB，但线上实测 ≥ 5.24 MB 仍能正常处理**（仅受 KV 单值 5 MiB 限制）。以实测为准，代码层在 5 MiB 处拦截
+  ⚠️ 官方文档写的是 1 MB，但线上实测 5,242,879 字节可正常写入并读回，**以实测为准**。若平台后续收紧到文档值，需同步调整代码里的拦截阈值
 - 函数必须导出 `onRequest` / `onRequestGet` 等 handler；平台**不支持 `addEventListener`**
 - 路由优先级：静态资源优先于函数（官方文档与 `routes.json` 的 `{handle:"filesystem"}` 一致）
+- 路由大小写敏感（`/helloworld` → `helloworld.js`）；`[id].js` 单级动态、`[[default]].js` 多级动态
+
+### 官方限制与配额（pages.edgeone.ai/zh/document/limits-and-quotas，2026-09 核对）
+
+| 项 | 限制 | 备注 |
+|---|---|---|
+| **Edge Functions 代码包** | **5 MB / 单个函数** | 非全项目总量口径；CI 已加体积断言（见 `.cnb.yml` 头部） |
+| Edge Functions CPU Time | 200 ms | 不含 I/O 等待 |
+| Edge Functions 执行次数 | 300 万 / 月 | 免费版 |
+| Edge Functions 请求 body | 文档 1 MB（实测 ≥ 5.24 MB 可用） | 不一致，以实测为准 |
+| 单文件大小 | 25 MB | 项目维度；当前最大资源 2.3 MB |
+| 单项目文件数 | 20000 | 当前 124 个静态资源 |
+| 总存储容量 | 5 GB | 按站点统计 |
+| KV 存储空间 | 1 GB | 单值大小文档写 1 MB（实测 5 MiB） |
+| 构建次数 / 并发 / 超时 | 500 次/月、并发 1、20 分钟 | 算力 4 核 6 GB |
+| 自定义域名 | 200 个 | |
+| Cloud Functions 代码包 | 128 MB（含依赖） | 本项目未使用 |
+
+> 注：Edge Functions 与 Cloud Functions 是两套体系，配额不同。本项目用的是 **Edge Functions**（V8 runtime，无 npm 包、无 Node 内置模块）。
 - `/p/` 的 CSP：`script-src 'unsafe-inline'`（有意为之——用户 HTML 需内联 JS；公开写入场景下确有 XSS 风险）
 - `/p/` 的 CSP：`connect-src 'none'`（渲染页内所有 fetch/XHR 被阻断）
 - 首页带 `Vary: User-Agent`（区分 AI 爬虫），注意 CDN 缓存碎片化
@@ -166,6 +183,11 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 v1.3.0 引入 mermaid / katex / swagger 后 `dist/` 涨到 7.1 MB，而当时 `build-edge.cjs` 把**整个 dist 内联**进函数 → 函数产物 **9.5 MB**，超平台 5 MB 上限。症状极具迷惑性：CI 日志显示 `Compiled edge functions successfully` + `Deploy Success`，但线上所有 API 返回 404。
 
 现在只内联 `dist/index.html`（函数约 **20 KB**）。**前端依赖变大不会再影响函数体积。**
+
+**`.cnb.yml` 已加自动防线**：两条部署链路（preview / production）在 `npm run build` 之后、`edgeone pages deploy` 之前会遍历 `edge-functions/**/*.js` 校验体积——
+- 超过 **5 MB**（官方单函数上限，当前 19 KB，余量 274 倍）→ **FAIL，中断部署**
+- 超过 **256 KB**（正常值 13 倍）→ **WARN，不阻断**，用于提前暴露「误内联 dist 但未超限」的情况（历史 master 版本函数为 705 KB，正是这种漏网情形——低于 5 MB 却在同一个错误架构上）
+- `edge-functions/` 下找不到 `.js` 产物 → FAIL（防构建未生效）
 
 ### 2. 构建必须可复现（哈希不能漂移）
 

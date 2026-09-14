@@ -34,6 +34,22 @@
 #   - `deploy dist`：CLI 视为纯静态直传，不会读取仓库根 edge-functions/ →
 #     函数根本没上传 → 线上 /stats、/update/ 等 API 全部 404
 # 注意：edge-functions/[[default]].js 必须是 catch-all 文件名（index.js 只匹配根路径）
+#
+# ===== 函数代码包体积校验（deploy 脚本内，build 之后、deploy 之前）=====
+# 官方限制（pages.edgeone.ai/zh/document/limits-and-quotas）：
+#   Edge Functions 代码包大小 = 5 MB / 单个函数（非全项目总量口径）
+# 事故背景：2026-09 修复前 build-edge.cjs 会内联整个 dist，v1.3.0 引入
+#   mermaid/katex/swagger 后 dist 达 7.1 MB → 函数产物 9.5 MB 超限。
+#   平台此时**仍返回 Deploy Success**，只是函数不生效、线上 API 全部 404，
+#   CI 全绿无法感知，只能靠线上 curl 才发现。
+# 阈值设计：
+#   硬失败 = 5 MB（官方硬上限，当前正常值 19 KB，余量 274 倍，不可能误杀）
+#   预警   = 256 KB（正常值约 19 KB 的 13 倍）
+#   为何不只按 5 MB 判断：仅一个门槛拦不住「误内联 dist 但未超限」的情况——
+#   历史 master 版本函数为 705 KB（同样内联了整个 dist）却低于 5 MB，
+#   只会在前端继续变大后才突然超限崩溃。预警线 256 KB 与正常值（19 KB）
+#   有 13 倍间距、与最小事故值（705 KB）有 2.7 倍间距，可提前暴露且不误报。
+#   WARN 不阻断流水线（避免阻碍函数体积的合理增长），只在日志中提示。
 .deploy-preview: &deploy-preview
   - name: validate-edgeone-token
     script: |
@@ -53,6 +69,30 @@
       # 预构建：确保仓库根 edge-functions/[[default]].js 是最新产物（CLI 扫描的就是它）
       npm install
       npm run build
+      # ---- 函数代码包体积校验（阈值依据见文件头部「体积校验」一节）----
+      LIMIT_FAIL=$((5 * 1024 * 1024))
+      LIMIT_WARN=$((256 * 1024))
+      FUNC_COUNT=0
+      SIZE_STATUS=0
+      for f in $(find edge-functions -type f -name '*.js' 2>/dev/null | sort); do
+        FUNC_COUNT=$((FUNC_COUNT + 1))
+        SIZE=$(stat -c%s "$f")
+        if [ "$SIZE" -gt "$LIMIT_FAIL" ]; then
+          echo "✘ FAIL: $f = $((SIZE / 1024)) KB，超过 EdgeOne 单函数代码包上限 5 MB"
+          echo "        疑似 build-edge.cjs 误把整个 dist 内联进函数（应只内联 index.html）"
+          SIZE_STATUS=1
+        elif [ "$SIZE" -gt "$LIMIT_WARN" ]; then
+          echo "⚠ WARN: $f = $((SIZE / 1024)) KB，超过 256 KB 预警线（正常约 19 KB）"
+          echo "        请确认未误内联静态资源；官方硬上限为 5 MB"
+        else
+          echo "✔ $f = $((SIZE / 1024)) KB（官方上限 5 MB）"
+        fi
+      done
+      if [ "$FUNC_COUNT" = "0" ]; then
+        echo "✘ FAIL: edge-functions/ 下未找到 .js 函数产物，构建可能未生效"
+        SIZE_STATUS=1
+      fi
+      [ "$SIZE_STATUS" = "0" ] || exit 1
       # 关键：不传目录路径 —— 由 CLI 自动构建 .edgeone 后再上传（见上方「部署方案 A」）
       edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
 
@@ -76,6 +116,30 @@
       # 预构建：确保仓库根 edge-functions/[[default]].js 是最新产物（CLI 扫描的就是它）
       npm install
       npm run build
+      # ---- 函数代码包体积校验（阈值依据见文件头部「体积校验」一节）----
+      LIMIT_FAIL=$((5 * 1024 * 1024))
+      LIMIT_WARN=$((256 * 1024))
+      FUNC_COUNT=0
+      SIZE_STATUS=0
+      for f in $(find edge-functions -type f -name '*.js' 2>/dev/null | sort); do
+        FUNC_COUNT=$((FUNC_COUNT + 1))
+        SIZE=$(stat -c%s "$f")
+        if [ "$SIZE" -gt "$LIMIT_FAIL" ]; then
+          echo "✘ FAIL: $f = $((SIZE / 1024)) KB，超过 EdgeOne 单函数代码包上限 5 MB"
+          echo "        疑似 build-edge.cjs 误把整个 dist 内联进函数（应只内联 index.html）"
+          SIZE_STATUS=1
+        elif [ "$SIZE" -gt "$LIMIT_WARN" ]; then
+          echo "⚠ WARN: $f = $((SIZE / 1024)) KB，超过 256 KB 预警线（正常约 19 KB）"
+          echo "        请确认未误内联静态资源；官方硬上限为 5 MB"
+        else
+          echo "✔ $f = $((SIZE / 1024)) KB（官方上限 5 MB）"
+        fi
+      done
+      if [ "$FUNC_COUNT" = "0" ]; then
+        echo "✘ FAIL: edge-functions/ 下未找到 .js 函数产物，构建可能未生效"
+        SIZE_STATUS=1
+      fi
+      [ "$SIZE_STATUS" = "0" ] || exit 1
       # 关键：不传目录路径（见上方「部署方案 A」）
       edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
