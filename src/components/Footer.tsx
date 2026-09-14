@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { ExternalLink, Hash, HardDrive, PencilLine } from "lucide-react";
 import { formatSize } from "@/lib/utils";
-import { CnbLogo, EdgeOneLogo, GitHubLogo } from "./logos";
+import { EdgeOneLogo, GitHubLogo } from "./logos";
+// CNB 链接已注释（原因见下方品牌行）。如需启用，请一并恢复此导入：
+// import { CnbLogo } from "./logos";
 
 interface FooterProps {
   totalKeys?: number;
@@ -69,18 +71,33 @@ export function Footer({ totalKeys, totalSize, writesToday }: FooterProps) {
         </FooterLink>
         <FooterLink
           href="https://github.com/sixiang-world/textdb-edgeone"
-          title="GitHub 仓库（镜像）"
+          title="GitHub 仓库（CNB 主仓库的公开镜像）"
         >
           <GitHubLogo className="size-3.5 shrink-0" />
           GitHub
         </FooterLink>
-        <FooterLink
-          href="https://cnb.cool/shisheng820/textdb-edgeone"
-          title="CNB 仓库（主仓库）"
-        >
-          <CnbLogo className="size-3.5 shrink-0" />
-          CNB
-        </FooterLink>
+        {/*
+          此处有意不提供 CNB 仓库链接，对外只暴露 GitHub 镜像。
+
+          CNB 才是本项目的**主仓库**：代码先提交到 CNB，由 `.cnb.yml` 的
+          `sync-to-github` 阶段在每次 push 后自动同步（强推分支与 tag）到
+          GitHub 公开镜像仓库，因此公开入口始终是 GitHub。
+
+          CNB 仓库保持**私有**是为了保护云构建日志中的隐私信息——
+          `.cnb.yml` 的部署脚本会用到 EDGEONE_PAGES_API_TOKEN 等密钥，
+          构建日志与流水线详情可能包含这类敏感内容，仅限成员可见。
+
+          若将来 CNB 仓库转为公开，取消下面这段注释即可恢复链接
+          （并记得同时恢复顶部的 CnbLogo 导入）：
+
+          <FooterLink
+            href="https://cnb.cool/shisheng820/textdb-edgeone"
+            title="CNB 仓库（主仓库，私有）"
+          >
+            <CnbLogo className="size-3.5 shrink-0" />
+            CNB
+          </FooterLink>
+        */}
       </div>
     </footer>
   );

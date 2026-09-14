@@ -15,7 +15,7 @@
 - **写入队列**：所有写/删/上传经 IndexedDB 队列串行执行，失败指数退避重试 3 次，网络恢复自动继续
 - **本地 Key 历史**：localStorage 记录最近 200 个操作过的 Key，支持搜索与快速回填
 - **OpenAPI 文档**：`/api` 页面基于 swagger-ui 展示完整规范（6 个路径 / 8 个操作 / 4 个 Schema），支持在线调试
-- **页脚品牌行**：EdgeOne Pages / GitHub / CNB 三个外链，各配官方 Logo（内联 SVG，见 `src/components/logos.tsx`）
+- **页脚品牌行**：EdgeOne Pages / GitHub 两个外链，各配官方 Logo（内联 SVG，见 `src/components/logos.tsx`）
 
 ## Commands
 
