@@ -60,8 +60,17 @@
 ### 5. 写/删路径密码来源优先级不一致
 
 - **位置**：`build-edge.cjs` 的 `handleApi()`
-- **现状**：写入路径 `inputPwd = params.password || header`（body 优先）；删除路径 `header || params.password`（header 优先）
-- **建议**：统一优先级（建议统一为 body 优先，与 API 文档 curl 示例一致）
+- **现状（2026-09-15 逐行核实，含此前未记录的第三条路径）**：
+
+  | 入口 | 代码位置 | 密码来源 |
+  |---|---|---|
+  | `POST /update/` 写入/更新 | `:177` | `params.password \|\| X-Password`（**body 优先**） |
+  | `POST /update/` 删除（`value` 为空串） | `:155,161` | `X-Password \|\| params.password`（**header 优先**） |
+  | `DELETE /{key}` | `:233` | 仅 `X-Password`（body 被忽略） |
+
+- **不一致范围**：仅前两条（同为 `/update/` 入口却优先级相反）。第三条 `DELETE /{key}` 只读 header 是**符合规范**的——`public/openapi.json` 的该操作只声明 `XPassword` 头参数、无 requestBody，**不属缺陷，无需改**
+- **影响**：前端 `src/api.ts` 的 `deleteData()` 走第二条且只在 body 传密码，故前端功能正常；仅 API 直接调用时同一入口的写/删行为不一致
+- **建议**：统一前两条为 body 优先（与 API 文档 curl 示例一致）。详见计划 Phase 3
 
 ### 6. 首页 AI 爬虫逻辑是死代码（2026-09-14 实测确认，结论已更新）
 

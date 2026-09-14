@@ -151,10 +151,16 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 
 成功响应为 `{"status":1,...}`，失败为 `{"status":0,"error":...}`。
 
-密码来源（**两条路径不一致，属已知问题**，见 `REVIEW_TODO.md` 第 5 项）：
+**密码来源有三条路径，行为各不相同**（2026-09-15 逐行核实，此前文档记载有误）：
 
-- 写入/更新路径：body `password` 优先，回退 `X-Password` 头（`params.password || X-Password`）
-- 删除路径：`X-Password` 头优先，回退 body `password`（`X-Password || params.password`）
+| 入口 | 代码位置 | 密码来源 | 说明 |
+|---|---|---|---|
+| `POST /update/` 写入/更新 | `build-edge.cjs:177` | `params.password \|\| X-Password` | **body 优先** |
+| `POST /update/` 删除（`value` 为空串） | `build-edge.cjs:155,161` | `X-Password \|\| params.password` | **header 优先** ← 与上一行不一致，即 `REVIEW_TODO.md` 第 5 项 |
+| `DELETE /{key}` | `build-edge.cjs:233` | 仅 `X-Password` | body 被**忽略**；符合 `public/openapi.json`（该操作只声明 `XPassword` 头参数、无 requestBody），非缺陷 |
+
+> 前端 `src/api.ts` 的 `deleteData()` 走的是**第二条**（`POST /update/` + `value:""` + body 传密码），因此前端删除功能正常。
+> 前两条的优先级不一致是已知问题，计划在 Phase 3 统一为 **body 优先**（`docs/superpowers/plans/2026-09-15-review-todo-remediation.md`）。
 
 ## Code Style
 

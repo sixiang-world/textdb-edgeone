@@ -554,6 +554,20 @@ curl -s -X DELETE "$B/$K" -H 'X-Password: pass1234'                 # 清理
 
 > 决策：**统一为 body 优先**。理由——`public/openapi.json` 的示例与前端调用均以 body 为主，header 仅作补充。
 
+### 前提修正（2026-09-15 逐行核实，此前记载有误）
+
+实际有**三条**密码路径，且 `DELETE /{key}` 的行为**符合规范、不是缺陷**：
+
+| 入口 | 代码位置 | 密码来源 | 是否属本 Phase 范围 |
+|---|---|---|---|
+| `POST /update/` 写入/更新 | `build-edge.cjs:177` | `params.password \|\| X-Password`（body 优先） | 参照基准，不改 |
+| `POST /update/` 删除（`value` 为空串） | `build-edge.cjs:155,161` | `X-Password \|\| params.password`（header 优先） | ✅ **本 Phase 唯一要改的目标** |
+| `DELETE /{key}` | `build-edge.cjs:233` | 仅 `X-Password` | ❌ 不改——`public/openapi.json` 的该操作只声明 `XPassword` 头参数、**无 requestBody**，故实现只读 header 是符合规范的 |
+
+> 因此 Task 3.1 的测试**不能**用 `DELETE /{key}` 来断言「body 优先」——该入口本就不接受 body 密码（`tests/password.test.mjs` 已有用例锁死这一点）。必须改用 `POST /update/` + `value:""` 这条前端实际使用的删除路径。
+>
+> 另注：`src/api.ts` 的 `deleteData()` 走的正是 `POST /update/` + `value:""` + body 传密码，因此本次统一**不会影响前端行为**（前端本来就只在 body 传）。
+
 ### Task 3.1：先写失败测试
 
 **Files:**
@@ -562,7 +576,7 @@ curl -s -X DELETE "$B/$K" -H 'X-Password: pass1234'                 # 清理
 - [ ] 在 `tests/password.test.mjs` 追加：
 
 ```js
-test("密码来源：写路径与删路径均以 body 优先", async () => {
+test("密码来源：/update/ 的写路径与删路径均以 body 优先", async () => {
   const kv = makeKV({ tdb_pr: "v" });
   // 先设密码 A
   await call(kv, "/update/", jsonInit({ key: "pr", value: "v1", password: "passA" }));
@@ -575,12 +589,13 @@ test("密码来源：写路径与删路径均以 body 优先", async () => {
   );
   assert.equal(w.status, 200, "写路径应 body 优先");
 
-  // 删路径：body 正确 + header 错误 → body 优先，应成功（当前实现会失败）
-  const d = await call(kv, "/pr", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json", "X-Password": "WRONG" },
-    body: JSON.stringify({ password: "passA" }),
-  });
+  // 删路径（POST /update/ + 空 value）：body 正确 + header 错误 → 应成功
+  // 当前实现是 header 优先，故这一步会失败 —— 即本 Phase 要修的缺陷
+  const d = await call(
+    kv,
+    "/update/",
+    jsonInit({ key: "pr", value: "", password: "passA" }, { "X-Password": "WRONG" })
+  );
   assert.equal(d.status, 200, "删路径应 body 优先（与写路径一致）");
 });
 ```
@@ -590,10 +605,10 @@ test("密码来源：写路径与删路径均以 body 优先", async () => {
 ### Task 3.2：实现
 
 **Files:**
-- Modify: `build-edge.cjs:151`（删除路径的密码来源优先级）
-- Test: `npm test`（`密码来源：写路径与删路径均以 body 优先` 用例由红转绿）
+- Modify: `build-edge.cjs:161`（`POST /update/` 删除路径的密码来源优先级；注意不是 `:233` 的 `DELETE /{key}`）
+- Test: `npm test`（`密码来源：/update/ 的写路径与删路径均以 body 优先` 用例由红转绿）
 
-- [ ] 修改 `build-edge.cjs:151`：
+- [ ] 修改 `build-edge.cjs:161`：
 
 ```js
   "        const pwdErr = await verifyDeletePassword(key, params.password || request.headers.get('X-Password') || '');",
@@ -602,13 +617,24 @@ test("密码来源：写路径与删路径均以 body 优先", async () => {
 ### Task 3.3：验证
 
 - [ ] `npm test` → 全通过
-- [ ] 额外确认「仅 header 传密码」仍可用（向后兼容）：
+- [ ] 额外确认「仅 header 传密码」在**被改动的这条路径**上仍可用（向后兼容，不能只保留 body）：
 
 ```js
-test("删除：仅用 X-Password 头仍可用（向后兼容）", async () => {
+test("删除（POST /update/ + 空 value）：仅用 X-Password 头仍可用（向后兼容）", async () => {
   const kv = makeKV();
   await call(kv, "/update/", jsonInit({ key: "hc", value: "v1", password: "pass1234" }));
-  const r = await call(kv, "/hc", { method: "DELETE", headers: { "X-Password": "pass1234" } });
+  const r = await call(
+    kv,
+    "/update/",
+    jsonInit({ key: "hc", value: "" }, { "X-Password": "pass1234" })
+  );
+  assert.equal(r.status, 200, "改为 body 优先后，仍应保留 header 回退");
+});
+
+test("删除（DELETE /{key}）：X-Password 头路径不受本 Phase 影响", async () => {
+  const kv = makeKV();
+  await call(kv, "/update/", jsonInit({ key: "hc2", value: "v1", password: "pass1234" }));
+  const r = await call(kv, "/hc2", { method: "DELETE", headers: { "X-Password": "pass1234" } });
   assert.equal(r.status, 200);
 });
 ```
