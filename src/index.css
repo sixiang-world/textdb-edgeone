@@ -2,6 +2,16 @@
 @plugin "@tailwindcss/typography";
 @import "@fontsource-variable/geist";
 
+/* 排除构建产物，避免「产物被扫描 → 影响 CSS → 改变产物哈希」的自我循环。
+   Tailwind v4 默认扫描项目内所有未被 .gitignore 忽略的文件，而 functions/ 与
+   edge-functions/ 是 build-edge.cjs 生成的产物（内联了 index.html 与函数代码），
+   若被扫描会让每次构建的 CSS 内容/哈希随上一次产物变化，
+   导致部署后旧哈希资源 404、浏览器缓存失效。class 名一律以 src/ 与 index.html 为准。 */
+@source not "../functions";
+@source not "../edge-functions";
+@source not "../dist";
+@source not "../.edgeone";
+
 @theme inline {
   --color-ring: oklch(0.708 0 0);
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;

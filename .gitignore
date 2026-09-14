@@ -2,3 +2,7 @@ node_modules/
 dist/
 .edgeone/
 .superpowers/
+# 删除操作产生的回收站残留。必须忽略：Tailwind v4 会扫描项目内未被忽略的文件，
+# 而这些残留里含旧 dist 副本（CSS/JS 里有大量 class 名），会导致每次构建产出的
+# CSS 内容与哈希都不一样 → 新部署后旧哈希资源 404 → 页面缓存失效白屏。
+.Trash-0/
