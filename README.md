@@ -27,7 +27,9 @@ npm run format       # prettier --write "**/*.{ts,tsx}"
 npm run typecheck    # tsc --noEmit
 ```
 
-**没有测试框架。** `npm run lint` + `npm run typecheck` 是唯一的自动化验证，push 前必须都通过。
+**push 前必须通过：`npm test` + `npm run lint` + `npm run typecheck`。**
+
+测试用 **Node.js 内置 test runner**（零新依赖，需 Node 21+），覆盖边缘函数的 API 行为基线、`/stats` 分页逻辑与 KV mock 自身语义；测试直接 import 构建产物，故 `npm test` 会先执行一次构建。详见 `AGENTS.md` 的「测试架构」。
 
 ## 部署
 

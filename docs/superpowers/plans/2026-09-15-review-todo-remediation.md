@@ -38,12 +38,16 @@
 
 ```
 tests/                                  # [新] 测试基线（零依赖）
-├── helpers.mjs                         # [新] KV mock + onRequest 调用封装
+├── helpers.mjs                         # [新] KV mock + onRequest 调用封装（含并发约束说明）
 ├── api.test.mjs                        # [新] API 行为基线（12 项）
-└── password.test.mjs                   # [新] 密码流程 + 迁移测试
+├── helpers.test.mjs                    # [新] KV mock 自身语义（分页/前缀）——它是所有测试的"预言机"
+├── stats.test.mjs                      # [新] /stats 分页累加、扫描上限、故障降级（7 项）
+└── password.test.mjs                   # [新] Phase 2 密码流程 + 迁移测试
 build-edge.cjs                          # [改] 恒定时间比较 / PBKDF2 / 版本化迁移 / 密码优先级统一
 src/App.tsx                             # [改] localStorage.setItem 加 try/catch
-package.json                            # [改] 新增 test 脚本
+src/index.css                           # [改] 追加 @source not "../*.md"（根 markdown 防御性排除）
+package.json                            # [改] 新增 test + pretest 脚本
+AGENTS.md / README.md                   # [改] Commands 补 npm test，新增「测试架构」章节
 .cnb.yml                                # [改] verify 阶段接 npm test
 REVIEW_TODO.md                          # [改] 逐项标记处理结果
 CHANGELOG.md                            # [改] 追加条目
@@ -243,6 +247,16 @@ test("DELETE 删除无密码保护的 key", async () => {
 - [x] 已完成：12/12 通过，退出码 0
 
 > 规格评审修正（2026-09-15）：上方「超大 value 返回 413」用例已按实际实现更新为「抽取 `big` 中间变量 + 自定义断言消息」的形式。原规格为单行内联表达式且无断言消息；改动理由是可读性与失败时的可诊断性（该断言涉及 5 MiB 数据，写明期望值便于排查）。语义等价，不影响覆盖率。
+>
+> **代码质量评审修正（2026-09-15）**：质量评审判定 "With fixes"，4 项 Important 已全部处理——
+> 1. `/stats` 分页与 `MAX_SCAN_KEYS` 上限**原本无任何覆盖** → 新增 `tests/stats.test.mjs`（7 项，含 256/257/1000/4999/5000+ 边界、内部 key 不计入、KV 故障降级）+ `tests/helpers.test.mjs`（5 项，自证 mock 分页语义）
+> 2. `globalThis.TEXTDB` 是进程内共享状态 → 在 `tests/helpers.mjs` 顶部写明「同一文件内用例必须串行、勿开 concurrency」，并在 AGENTS.md 记录
+> 3. `_store` 以下划线命名却作公开测试接口 → 重命名为 `store` 并加注释说明用途
+> 4. `AGENTS.md` / `README.md` 仍写「没有测试框架」与事实矛盾 → 补 `npm test` 并新增「测试架构」章节
+>
+> 额外加固（评审 Minor 项衍生）：
+> - `package.json` 加 `pretest` 护栏——实测 `node --test` 在 glob 不匹配时会**报 0 用例但退出码 0**（静默绿），对本项目此类"CI 绿但线上挂"的历史问题尤其危险，故无测试文件时直接 exit 1
+> - `src/index.css` 追加 `@source not "../*.md"`——根目录 markdown 也被 Tailwind 扫描，实测当前未贡献 class，属防御性排除
 
 > 已知限制（实测确认，暂不处理）：`eslint.config.js` 只匹配 `**/*.{ts,tsx}`，`npm run lint` **不覆盖** `tests/*.mjs`；`npm run format` 的 glob 同样只含 `{ts,tsx}`。若将来需要，可扩展 eslint `files` 与 format glob，但会引入对 `.mjs` 的规则集选择问题，本计划范围外。
 

@@ -21,7 +21,29 @@ npm run format       # prettier --write "**/*.{ts,tsx}"
 npm run typecheck    # tsc --noEmit
 ```
 
-**没有测试框架。** `npm run lint` + `npm run typecheck` 是唯一的自动化验证，push 前必须通过。
+**push 前必须通过：`npm test` + `npm run lint` + `npm run typecheck`。**
+
+`npm test` 需要 **Node 21+**（依赖 `node --test` 对 glob 模式的展开）。测试脚本内前置了 `npm run build`，因为测试导入的是构建产物。
+
+### 测试架构（`tests/`）
+
+用 **Node.js 内置 test runner**（`node --test`），**零新依赖**：
+
+| 文件 | 职责 |
+|---|---|
+| `tests/helpers.mjs` | 内存 KV mock（接口对齐 EdgeOne KV）+ `onRequest` 调用封装 + JSON 快捷方式 |
+| `tests/api.test.mjs` | 12 项 API 行为基线（读/写/删/渲染/限制/CORS） |
+| `tests/stats.test.mjs` | `/stats` 的 list 分页累加、`scannedAll` 扫描上限、故障降级 |
+| `tests/helpers.test.mjs` | KV mock 自身的分页语义（它是所有测试的"预言机"，需自证正确） |
+
+**测试直接 import 构建产物** `edge-functions/[[default]].js`（`build-edge.cjs` 是函数逻辑唯一真源），因此改完函数逻辑必须重新构建——`npm test` 已内置。
+
+**两条硬约束：**
+
+1. **同一测试文件内的用例必须串行**（Node 默认行为）。不要给 `test()` / `describe()` 开启 `concurrency`：边缘函数把 `context.env.TEXTDB` 写入 `globalThis.TEXTDB`（进程内共享），并发调用会互相覆盖 KV 绑定。不同测试文件由独立子进程运行，互不影响。
+2. **每个用例各自 `makeKV()` 建独立实例**，不要共享。
+
+已知限制：`eslint.config.js` 只匹配 `**/*.{ts,tsx}`，`npm run lint` 与 `npm run format` **不覆盖** `tests/*.mjs`，故测试代码需手工保证 Prettier 风格（无分号、双引号、printWidth 80）。
 
 ## 部署（CNB 流水线 + edgeone CLI）
 

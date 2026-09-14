@@ -15,7 +15,7 @@ test("写入后读取：往返一致", async () => {
 test("KV 前缀：写入落在 tdb_ 命名空间", async () => {
   const kv = makeKV();
   await call(kv, "/update/", jsonInit({ key: "t2", value: "v" }));
-  assert.ok(kv._store.has("tdb_t2"), "应写入 tdb_t2");
+  assert.ok(kv.store.has("tdb_t2"), "应写入 tdb_t2");
 });
 
 test("非法 key 返回 400", async () => {
@@ -50,7 +50,7 @@ test("空 value 触发删除", async () => {
   const r = await call(kv, "/update/", jsonInit({ key: "del", value: "" }));
   assert.equal(r.status, 200);
   assert.equal((await readJSON(r)).data.action, "deleted");
-  assert.ok(!kv._store.has("tdb_del"), "KV 中应已删除");
+  assert.ok(!kv.store.has("tdb_del"), "KV 中应已删除");
 });
 
 test("/stats 汇总键数与体积", async () => {
@@ -86,5 +86,5 @@ test("DELETE 删除无密码保护的 key", async () => {
   const kv = makeKV({ tdb_d: "v" });
   const r = await call(kv, "/d", { method: "DELETE" });
   assert.equal(r.status, 200);
-  assert.ok(!kv._store.has("tdb_d"));
+  assert.ok(!kv.store.has("tdb_d"));
 });

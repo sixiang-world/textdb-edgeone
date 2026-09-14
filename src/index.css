@@ -16,6 +16,11 @@
 @source not "../.edgeone";
 @source not "../docs";
 @source not "../tests";
+/* 根目录的 markdown（AGENTS.md / README.md / CHANGELOG.md 等）也不参与 UI，
+   但会被 Tailwind v4 扫描。实测当前它们未贡献任何 class，此处为防御性排除：
+   否则在文档里随手写一个 Tailwind 类名（如 hover:bg-red-500）就会改变前端产物哈希，
+   导致已部署的旧哈希资源被替换、用户缓存失效。 */
+@source not "../*.md";
 
 @theme inline {
   --color-ring: oklch(0.708 0 0);
