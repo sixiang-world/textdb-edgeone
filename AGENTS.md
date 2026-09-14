@@ -97,6 +97,8 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 | `src/components/pages/*` | 四个页面：OperatePage / FolderPage / ApiDocsPage / ChangelogPage |
 | `src/components/KeyHistory.tsx` | 本地 Key 历史列表 |
 | `src/components/QueueStatus.tsx` | 写入队列状态浮层 |
+| `src/components/logos.tsx` | 内联品牌 SVG：CNB（官方 Symbol，橙 #FF6200）、EdgeOne（官方 Symbol，渐变 #00DDFF→#0C60F2）、GitHub mark |
+| `src/components/Footer.tsx` | 页脚：统计行 + 品牌行（EdgeOne Pages / GitHub / CNB 三个外链，各配 Logo） |
 | `src/lib/writeQueue.ts` | IndexedDB 串行写入队列（指数退避重试） |
 | `src/lib/keyHistory.ts` | localStorage Key 历史（最近 200 条） |
 | `src/lib/folderUtils.ts` | 文件夹上传工具（pathToKey / rewriteRefs / isBinary） |
