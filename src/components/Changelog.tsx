@@ -26,6 +26,26 @@ interface VersionEntry {
  */
 const VERSIONS: VersionEntry[] = [
   {
+    version: "1.3.0",
+    date: "2026-09-04",
+    changes: [
+      { type: "新增", text: "OpenAPI 文档页面（/api），基于 swagger-ui 展示完整 API 规范，支持在线调试" },
+      { type: "新增", text: "本地 Key 历史浏览：操作页底部可折叠列表，记录最近 200 条写入过的 Key，支持搜索和一键选择" },
+      { type: "新增", text: "写入队列 / 自动重试：所有写入、删除、上传通过 IndexedDB 队列串行执行，失败指数退避重试 3 次，网络恢复自动继续" },
+      { type: "新增", text: "队列状态指示器：右下角浮动面板，展示 pending/processing/error 项，支持手动重试和丢弃" },
+      { type: "新增", text: "Markdown 增强：KaTeX 数学公式、atom-one-dark 代码高亮、标题锚点、Mermaid 图表、右侧 TOC 目录导航" },
+      { type: "修复", text: "文件夹上传进度条一闪即逝且按钮可重复点击的问题" },
+      { type: "修复", text: "写入/删除按钮改为队列后未禁用导致重复入队的问题" },
+      { type: "修复", text: "写入成功后密码字段未清除的肩窥风险" },
+      { type: "修复", text: "队列操作失败时本地 UI 无反馈的问题" },
+      { type: "修复", text: "writeQueue IndexedDB 写入未 await 导致静默丢失的问题" },
+      { type: "修复", text: "Mermaid 未设置 securityLevel 的 XSS 风险" },
+      { type: "优化", text: "重试次数上限导出为 MAX_RETRIES 常量，消除硬编码" },
+      { type: "优化", text: "历史刷新事件名导出为 HISTORY_REFRESH_EVENT 常量" },
+      { type: "优化", text: "ApiDocs fetch 添加 AbortController，组件卸载后不 setState" },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-07-13",
     changes: [

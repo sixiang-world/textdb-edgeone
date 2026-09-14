@@ -122,7 +122,7 @@ const lines = [
   "  const { request } = context;",
   "  const url = new URL(request.url);",
   "  const path = url.pathname;",
-  "  // 按官方文档：直接使用全局变量 TEXTDB",
+  "  // KV 实例已在 onRequest 入口从 context.env.TEXTDB 注入到全局",
   "",
   "  if (request.method === 'OPTIONS') return new Response(null, {status: 204, headers: CORS});",
   "",
@@ -236,6 +236,8 @@ const lines = [
   "",
   "export async function onRequest(context) {",
   "  const { request } = context;",
+  "  // EdgeOne Pages KV 绑定注入到 context.env（非全局变量），兼容旧代码的全局 TEXTDB 引用",
+  "  if (context.env && context.env.TEXTDB) globalThis.TEXTDB = context.env.TEXTDB;",
   "  const url = new URL(request.url);",
   "  const path = url.pathname;",
   "",
@@ -365,9 +367,32 @@ const edgeDir = path.join(__dirname, "edge-functions");
 if (!fs.existsSync(edgeDir)) fs.mkdirSync(edgeDir);
 fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 
-// 写入 .edgeone 部署目录（确保部署时使用最新 edge function）
-const edgeoneEdgeDir = path.join(__dirname, ".edgeone", "edge-functions");
+// 写入 .edgeone 构建目录，产物格式对齐 EdgeOne Pages / edgeone CLI 的约定：
+//   .edgeone/edge-functions/[[default]].js   catch-all 边缘函数
+//   .edgeone/edge-functions/config.json      { routes: [{ src: "^/(.*)$" }], middleware: null }
+// 键名规范（与 CLI 生成的一致，不要臆造 version 字段）：
+//   routes 声明该函数匹配的路径；catch-all 用 "^/(.*)$"
+// 历史教训：1.3.0 切到 edgeone CLI 部署后，
+//   1) 曾把产物写成 edge-functions/index.js —— index.js 经 CLI 会被解析为
+//      路由 /（且 index.js 只匹配根路径），/update/ /{key} /stats 等子路径
+//      落到平台默认 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON，
+//      报错 "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+//   2) config.json 曾写成 { version: 3 }，与 CLI 实际消费的键名不符
+const edgeoneDir = path.join(__dirname, ".edgeone");
+if (!fs.existsSync(edgeoneDir)) fs.mkdirSync(edgeoneDir, { recursive: true });
+const edgeoneEdgeDir = path.join(edgeoneDir, "edge-functions");
 if (!fs.existsSync(edgeoneEdgeDir)) fs.mkdirSync(edgeoneEdgeDir, { recursive: true });
-fs.writeFileSync(path.join(edgeoneEdgeDir, "index.js"), edgeCode);
+fs.writeFileSync(path.join(edgeoneEdgeDir, "[[default]].js"), edgeCode);
+
+// edge-functions/config.json —— 声明 catch-all 路由
+const edgeFunctionConfig = JSON.stringify(
+  {
+    routes: [{ src: "^/(.*)$" }],
+    middleware: null,
+  },
+  null,
+  2
+);
+fs.writeFileSync(path.join(edgeoneEdgeDir, "config.json"), edgeFunctionConfig);
 
 console.log("✅ build-edge.cjs fixed with safe join.");

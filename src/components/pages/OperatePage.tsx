@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { WriteCard } from "@/components/WriteCard";
+import { KeyHistory } from "@/components/KeyHistory";
 
-interface OperatePageProps {
-  onStatsRefresh?: () => void;
-}
+export function OperatePage() {
+  const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
 
-export function OperatePage({ onStatsRefresh }: OperatePageProps) {
-  return <WriteCard onStatsRefresh={onStatsRefresh} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <WriteCard selectedKey={selectedKey} />
+      <KeyHistory onSelect={(key) => setSelectedKey(key)} />
+    </div>
+  );
 }

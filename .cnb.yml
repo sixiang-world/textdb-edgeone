@@ -23,7 +23,15 @@
 
 # ===== EdgeOne Pages 部署：预发环境 =====
 # 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
-# （自动执行 npm install + npm run build，并打包 edge-functions 一起上传）
+# 关键：显式 npm run build 后，把「静态产物目录 dist/」交给 CLI 部署，
+# CLI 会自行生成 .edgeone/{edge-functions/[[default]].js,config.json} 并一起上传
+# 历史教训（1.3.0 两次翻车）：
+#   1) `edgeone pages deploy`（不传路径）依赖 CLI 自动构建，曾在 CI 中
+#      未生成 edge-functions catch-all，导致 POST /update/ 返回 HTML
+#   2) 改传 `edgeone pages deploy .edgeone` 后部署直接 Failed：
+#      CLI 以传入目录为根展开上传，且其上传过滤器含
+#      `FilePath.startsWith(".") && FilePath !== basename(FilePath)` 条件，
+#      .edgeone 下所有路径都形如 `.edgeone/xxx`，被全部跳过 → 空上传 → Failed
 .deploy-preview: &deploy-preview
   - name: validate-edgeone-token
     script: |
@@ -38,9 +46,19 @@
       # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
       npm config set legacy-peer-deps true
       npm install -g edgeone --legacy-peer-deps
-  - name: 部署到 EdgeOne Pages 预发环境
+  - name: build-and-deploy-preview
     script: |
-      edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
+      # 显式构建：dist/ 为静态前端产物，.edgeone/ 由 edgeone CLI 在此目录上二次构建生成
+      npm install
+      npm run build
+      # 关键：必须传 dist/（静态产物），不能传 .edgeone/
+      # CLI 会把传入目录内的所有顶层文件（含隐藏文件）上传到 COS 根，
+      # 且自身再生成一次 .edgeone/edge-functions/[[default]].js（catch-all）+ config.json
+      # 历史教训：传 .edgeone 会让 CLI 把整棵 .edgeone 树展开到上传根，同时命中
+      # 上传过滤器中 `FilePath.startsWith(".") && FilePath !== basename(FilePath)`
+      # 条件——凡是 .edgeone/xxx 形式的路径全部被跳过，等于上传 0 个文件，
+      # 平台侧拿不到 index.html 与 edge function，部署直接 Failed
+      edgeone pages deploy dist -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== EdgeOne Pages 部署：生产环境 =====
 .deploy-production: &deploy-production
@@ -57,9 +75,13 @@
       # 改用全局安装 + --legacy-peer-deps 绕过 peer 依赖解析 bug
       npm config set legacy-peer-deps true
       npm install -g edgeone --legacy-peer-deps
-  - name: 部署到 EdgeOne Pages 生产环境
+  - name: build-and-deploy-production
     script: |
-      edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
+      # 显式构建：dist/ 为静态前端产物，.edgeone/ 由 edgeone CLI 在此目录上二次构建生成
+      npm install
+      npm run build
+      # 关键：传 dist/ 而非 .edgeone/，原因见上方 preview 段落注释
+      edgeone pages deploy dist -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== GitHub 同步公共 stages（自动版：当前分支 + tags） =====
 .sync-github: &sync-github

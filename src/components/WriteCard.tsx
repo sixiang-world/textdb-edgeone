@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,8 @@ import {
   Upload,
 } from "lucide-react";
 import { QrCode } from "@/components/QrCode";
-import { writeData, deleteData, readData } from "@/api";
+import { readData } from "@/api";
+import { enqueue } from "@/lib/writeQueue";
 import { toast } from "sonner";
 
 const BASE = location.origin;
@@ -86,11 +87,12 @@ function looksLikeJs(value: string): boolean {
   );
 }
 
-export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
+export function WriteCard({ selectedKey }: { selectedKey?: string }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const [collapsed, setCollapsed] = useState(false);
-  const [loadingOp, setLoadingOp] = useState<"write" | "read" | "delete" | null>(null);
+  const [loadingOp, setLoadingOp] = useState<"read" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");   // /{key} 源链接
   const [renderUrl, setRenderUrl] = useState("");    // /p/{key} HTML 渲染链接（仅 HTML）
@@ -102,6 +104,15 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
   const [showPwdOptions, setShowPwdOptions] = useState(false);
   const [removePassword, setRemovePassword] = useState(false);
   const [newPasswordTouched, setNewPasswordTouched] = useState(false);
+
+  // 外部选择 key 时自动填入并读取
+  useEffect(() => {
+    if (selectedKey && selectedKey !== key) {
+      setKey(selectedKey);
+      handleRead(selectedKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey]);
 
   function genKey() {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -134,77 +145,67 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     e.target.value = "";
   }
 
-  async function handleWrite() {
+  function handleWrite() {
     if (!key) return toast.error("请输入 Key");
     if (!value) return toast.error("请输入内容");
-    setLoadingOp("write");
-    setResult("");
-    setSourceUrl("");
-    setRenderUrl("");
-    setJsUrl("");
-    try {
-      const pwd = password || undefined;
-      let npwd: string | undefined;
-      if (removePassword) {
-        npwd = '';
-      } else if (showPwdOptions && newPasswordTouched && newPassword.length > 0) {
-        npwd = newPassword;
-      }
-      const d = await writeData(key, value, pwd, npwd);
-      setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const pwd = password || undefined;
+    let npwd: string | undefined;
+    if (removePassword) {
+      npwd = '';
+    } else if (showPwdOptions && newPasswordTouched && newPassword.length > 0) {
+      npwd = newPassword;
+    }
+    enqueue({ type: "write", key, value, password: pwd, newPassword: npwd }, {
+      onSuccess: () => {
         setSourceUrl(`${BASE}/${key}`);
-        if (looksLikeHtml(value)) {
-          setRenderUrl(`${BASE}/p/${key}`);
-        }
-        if (looksLikeJs(value)) {
-          setJsUrl(`${BASE}/file/js/${key}`);
-        }
-        // 写入成功：清除新密码相关状态
+        if (looksLikeHtml(value)) setRenderUrl(`${BASE}/p/${key}`);
+        if (looksLikeJs(value)) setJsUrl(`${BASE}/file/js/${key}`);
+        setPassword("");
+        setShowPassword(false);
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setRemovePassword(false);
-        toast.success("写入成功");
-        onStatsRefresh?.();
-      } else toast.error(d.error || "写入失败");
-    } catch (e: unknown) {
-      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setLoadingOp(null);
-    }
+        setResult("");
+        setIsSubmitting(false);
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      },
+    });
+    toast.info("已加入写入队列");
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!key) return toast.error("请输入 Key");
-    setLoadingOp("delete");
-    setResult("");
-    setSourceUrl("");
-    setRenderUrl("");
-    setJsUrl("");
-    try {
-      const d = await deleteData(key, password || undefined);
-      setResult(JSON.stringify(d, null, 2));
-      if (d.status === 1) {
-        // 删除成功：清除所有密码相关状态
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    enqueue({ type: "delete", key, password: password || undefined }, {
+      onSuccess: () => {
         setPassword("");
         setNewPassword("");
         setNewPasswordTouched(false);
         setShowPwdOptions(false);
         setShowPassword(false);
         setRemovePassword(false);
-        toast.success("已删除");
-        onStatsRefresh?.();
-      } else toast.error(d.error || "删除失败");
-    } catch (e: unknown) {
-      setResult("请求失败: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setLoadingOp(null);
-    }
+        setResult("");
+        setSourceUrl("");
+        setRenderUrl("");
+        setJsUrl("");
+        setIsSubmitting(false);
+      },
+      onError: () => {
+        setIsSubmitting(false);
+      },
+    });
+    toast.info("已加入删除队列");
   }
 
-  async function handleRead() {
-    if (!key) return toast.error("请输入 Key");
+  async function handleRead(readKey?: string) {
+    const k = readKey || key;
+    if (!k) return toast.error("请输入 Key");
     setLoadingOp("read");
     setResult("");
     setSourceUrl("");
@@ -212,12 +213,12 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
     setJsUrl("");
     setReadOnly(false);
     try {
-      const t = await readData(key);
+      const t = await readData(k);
       if (t) {
         setValue(t);
-        setSourceUrl(`${BASE}/${key}`);
-        if (looksLikeHtml(t)) setRenderUrl(`${BASE}/p/${key}`);
-        if (looksLikeJs(t)) setJsUrl(`${BASE}/file/js/${key}`);
+        setSourceUrl(`${BASE}/${k}`);
+        if (looksLikeHtml(t)) setRenderUrl(`${BASE}/p/${k}`);
+        if (looksLikeJs(t)) setJsUrl(`${BASE}/file/js/${k}`);
         const preview = getCollapsedPreview(t);
         if (preview !== null) setCollapsed(true);
         setReadOnly(true);
@@ -241,6 +242,8 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
       toast.error("复制失败，请手动复制");
     }
   }
+
+  const btnDisabled = loadingOp !== null || isSubmitting;
 
   return (
     <Card>
@@ -406,16 +409,16 @@ export function WriteCard({ onStatsRefresh }: { onStatsRefresh?: () => void }) {
         </p>
 
         <div className="flex gap-2 flex-wrap items-center">
-          <Button onClick={handleWrite} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
-            {loadingOp === "write" ? <Loader2 className="animate-spin" /> : <Upload />}
+          <Button onClick={handleWrite} disabled={btnDisabled} className="flex-1 sm:flex-none">
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <Upload />}
             写入
           </Button>
-          <Button variant="outline" onClick={handleRead} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
+          <Button variant="outline" onClick={() => handleRead()} disabled={btnDisabled} className="flex-1 sm:flex-none">
             {loadingOp === "read" ? <Loader2 className="animate-spin" /> : <Search />}
             读取
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={loadingOp !== null} className="flex-1 sm:flex-none">
-            {loadingOp === "delete" ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          <Button variant="outline" onClick={handleDelete} disabled={btnDisabled} className="flex-1 sm:flex-none">
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <Trash2 />}
             删除此 Key
           </Button>
         </div>
