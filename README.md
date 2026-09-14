@@ -167,6 +167,7 @@ Tailwind CSS v4 会扫描项目内所有未被 `.gitignore` 忽略的文件来�
 
 | 文档 | 说明 |
 |---|---|
+| [**HANDOFF.md**](HANDOFF.md) | **进行中工作的交接文档**（含待办、关键决策、踩坑知识与恢复提示词） |
 | [AGENTS.md](AGENTS.md) | 给 AI 编码助手的项目指南（架构、约定、约束） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录（Keep a Changelog 格式） |
 | [ROADMAP.md](ROADMAP.md) | 版本规划 |

@@ -3,6 +3,7 @@
 > 来源：dev → master 合并前 Code Review（2026-09-03）
 > 状态：以下为评审中发现的**非阻断性**改进项，按优先级排期处理。
 > **实施计划：** [docs/superpowers/plans/2026-09-15-review-todo-remediation.md](docs/superpowers/plans/2026-09-15-review-todo-remediation.md)
+> **进度交接：** [HANDOFF.md](HANDOFF.md)（当前进度：Phase 0/1/2 代码完成，Phase 2 待线上验证；含待办清单与恢复提示词）
 > （Phase 0-4 可实施，Phase 5-6 需先做决策；下方各项的处理状态随计划执行同步更新）
 >
 > **实施计划（2026-09-15 制定）：** [`docs/superpowers/plans/2026-09-15-review-todo-remediation.md`](docs/superpowers/plans/2026-09-15-review-todo-remediation.md)
