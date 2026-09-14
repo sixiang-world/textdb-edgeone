@@ -367,24 +367,32 @@ const edgeDir = path.join(__dirname, "edge-functions");
 if (!fs.existsSync(edgeDir)) fs.mkdirSync(edgeDir);
 fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 
-// 写入 .edgeone 部署目录（EdgeOne Pages 构建输出 API 规范）
-// 关键：edge function 文件名必须是 [[default]].js（catch-all），
-// 不能用 index.js（index.js 只匹配根路径 /，不匹配 /update/ /{key} /stats 等子路径）
-// 历史教训：1.3.0 切到 edgeone CLI 部署后，曾误用 index.js 导致所有非根路径 POST
-// 请求落到平台默认 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON，
-// 报错 "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+// 写入 .edgeone 构建目录，产物格式对齐 EdgeOne Pages / edgeone CLI 的约定：
+//   .edgeone/edge-functions/[[default]].js   catch-all 边缘函数
+//   .edgeone/edge-functions/config.json      { routes: [{ src: "^/(.*)$" }], middleware: null }
+// 键名规范（与 CLI 生成的一致，不要臆造 version 字段）：
+//   routes 声明该函数匹配的路径；catch-all 用 "^/(.*)$"
+// 历史教训：1.3.0 切到 edgeone CLI 部署后，
+//   1) 曾把产物写成 edge-functions/index.js —— index.js 经 CLI 会被解析为
+//      路由 /（且 index.js 只匹配根路径），/update/ /{key} /stats 等子路径
+//      落到平台默认 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON，
+//      报错 "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+//   2) config.json 曾写成 { version: 3 }，与 CLI 实际消费的键名不符
 const edgeoneDir = path.join(__dirname, ".edgeone");
 if (!fs.existsSync(edgeoneDir)) fs.mkdirSync(edgeoneDir, { recursive: true });
 const edgeoneEdgeDir = path.join(edgeoneDir, "edge-functions");
 if (!fs.existsSync(edgeoneEdgeDir)) fs.mkdirSync(edgeoneEdgeDir, { recursive: true });
 fs.writeFileSync(path.join(edgeoneEdgeDir, "[[default]].js"), edgeCode);
 
-// 生成 config.json（EdgeOne Pages 构建输出 API 元信息）
-// 主要声明 version。路由本身由 edge-functions/[[default]].js catch-all 处理
-// （该文件名约定匹配所有路径，包括 /update/ /{key} /stats 等）
-const configJson = JSON.stringify({
-  version: 3
-}, null, 2);
-fs.writeFileSync(path.join(edgeoneDir, "config.json"), configJson);
+// edge-functions/config.json —— 声明 catch-all 路由
+const edgeFunctionConfig = JSON.stringify(
+  {
+    routes: [{ src: "^/(.*)$" }],
+    middleware: null,
+  },
+  null,
+  2
+);
+fs.writeFileSync(path.join(edgeoneEdgeDir, "config.json"), edgeFunctionConfig);
 
 console.log("✅ build-edge.cjs fixed with safe join.");

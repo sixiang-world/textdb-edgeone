@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "nodeVersion": "22.11.0",
-  "outputDirectory": "./.edgeone"
+  "nodeVersion": "22.11.0"
 }
