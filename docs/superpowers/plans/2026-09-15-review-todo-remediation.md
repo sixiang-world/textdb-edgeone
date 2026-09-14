@@ -136,7 +136,12 @@ export const readJSON = async (r) => JSON.parse(await r.text());
 **Files:**
 - Create: `tests/api.test.mjs`
 - Modify: `package.json`（新增 `test` 脚本）
-- Test: `npm test`（`npm run build && node --test tests/`）
+- Test: `npm test`（`npm run build && node --test "tests/**/*.test.mjs"`）
+
+> ⚠️ 执行时的两处实测修正（已落地，勿改回）：
+> 1. 不能用 `node --test tests/` —— 该形式在本项目 Node v22.23.1 下会把目录当模块加载而报 `MODULE_NOT_FOUND`
+> 2. 也不能用裸 `node --test`（无参数）—— 其默认模式 `**/test-*.js` 会误抓 legacy 文件 `functions/test-kv.js`，导致多出 1 个假测试
+> 3. 因此固定为显式 glob `"tests/**/*.test.mjs"`（Node 自身展开，不依赖 shell）
 
 - [ ] 创建 `tests/api.test.mjs`，覆盖当前**已确认正常**的行为（锁死基线，防后续改动引入回归）：
 
@@ -232,8 +237,11 @@ test("DELETE 删除无密码保护的 key", async () => {
 });
 ```
 
-- [ ] 加 `package.json` 脚本：`"test": "npm run build && node --test tests/"`
+- [ ] 加 `package.json` 脚本：`"test": "npm run build && node --test \"tests/**/*.test.mjs\""`
 - [ ] 运行 `npm test` → **预期 12 项全通过**（这些都是当前已正确的行为）
+- [x] 已完成：12/12 通过，退出码 0
+
+> 已知限制（实测确认，暂不处理）：`eslint.config.js` 只匹配 `**/*.{ts,tsx}`，`npm run lint` **不覆盖** `tests/*.mjs`；`npm run format` 的 glob 同样只含 `{ts,tsx}`。若将来需要，可扩展 eslint `files` 与 format glob，但会引入对 `.mjs` 的规则集选择问题，本计划范围外。
 
 > ⚠️ 若某项失败，说明我对基线行为的理解有误——**先修正测试再继续**，不要改实现。
 

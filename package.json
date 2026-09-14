@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc -b --noEmit",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
     "preview": "vite preview"
   },
   "dependencies": {
