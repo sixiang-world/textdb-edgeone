@@ -207,7 +207,11 @@ Tailwind v4 会扫描项目内所有未被 `.gitignore` 忽略的文件收集 cl
 @source not "../edge-functions";
 @source not "../dist";
 @source not "../.edgeone";
+@source not "../docs";
+@source not "../tests";
 ```
+
+`docs/` 与 `tests/` 也要排除：Tailwind v4 会扫描 `.md` 文件，而 plans/specs 里写的代码片段含 Tailwind 类名（实测有 17 个类由此进入 CSS），一旦文档增删就会改变前端产物哈希。
 
 验证：连续跑两次 `npm run build`，`dist/assets/index-*.{js,css}` 文件名必须完全一致。
 

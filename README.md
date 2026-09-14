@@ -139,7 +139,11 @@ Tailwind CSS v4 会扫描项目内所有未被 `.gitignore` 忽略的文件来�
 @source not "../edge-functions";
 @source not "../dist";
 @source not "../.edgeone";
+@source not "../docs";
+@source not "../tests";
 ```
+
+`docs/` 与 `tests/` 一并排除的原因：Tailwind v4 会扫描 `.md` 文件，而文档里的代码片段含 Tailwind 类名（实测曾有 17 个类由此进入 CSS），会导致「改文档 → 前端产物哈希变化 → 用户缓存失效」。
 
 验证方法：连续执行两次 `npm run build`，`dist/assets/index-*.{js,css}` 的文件名必须完全一致。
 

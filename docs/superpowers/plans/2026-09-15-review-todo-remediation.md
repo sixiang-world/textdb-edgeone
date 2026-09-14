@@ -1,10 +1,20 @@
 # REVIEW_TODO 遗留事项整改 — 实施计划
 
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+>
 > **配套需求来源：** `REVIEW_TODO.md`（6 项遗留：2 项 P1 安全 / 2 项 P2 健壮性 / 2 项 P3 一致性）
 > **Goal:** 修复 6 项 Code Review 遗留问题（2 项安全加固、2 项健壮性、2 项一致性/决策），并为边缘函数建立可回归的测试基线
 > **Architecture:** 先建测试基线（Phase 0，后续每个 Phase 都靠它做 TDD），再按「低风险 → 高风险」推进；每项改动的后端逻辑集中在 `build-edge.cjs`，前端仅 Phase 4 动一处
 > **Tech Stack:** Node.js 内置 test runner（零依赖）+ WebCrypto PBKDF2 + edgeone CLI 部署
 > **状态：** 待执行（Phase 0-4 可直接实施；Phase 5-6 需先做决策）
+>
+> 注：本仓库的计划统一存放于 `docs/superpowers/plans/`（沿用项目既有约定，与另外 5 份历史计划一致）。
+>
+> **先决条件（执行前必须满足）：**
+> - 已安装 Node.js 22+（`node -v`）
+> - 处于 `dev` 分支且工作区干净（`git status` 无输出）
+> - 已执行 `npm install`（edgeone CLI 需在 devDependencies 中）
+> - 当前基线：`npm run typecheck` / `npm run lint` / `npm test` 均可运行（`npm test` 在 Phase 0 之前会失败，属预期）
 
 ---
 
@@ -48,6 +58,10 @@ CHANGELOG.md                            # [改] 追加条目
 > 为什么必须先做：Phase 1-3 都改密码逻辑，而这是**用户数据的访问控制**，没有回归测试就改动风险过高。项目目前无任何测试框架，此 Phase 用 Node 内置 test runner 补上，**零新依赖**。
 
 ### Task 0.1：创建 KV mock 与调用封装
+
+**Files:**
+- Create: `tests/helpers.mjs`
+- Reference: `package.json`（`"type":"module"` 已存在，无需改动）
 
 - [ ] 创建 `tests/helpers.mjs`：
 
@@ -118,6 +132,11 @@ export const readJSON = async (r) => JSON.parse(await r.text());
 - [ ] 验证导入路径正确：`node -e "import('./tests/helpers.mjs').then(m=>console.log(Object.keys(m)))"` → 应输出 `[ 'makeKV', 'loadHandler', 'call', 'jsonInit', 'readJSON' ]`
 
 ### Task 0.2：API 行为基线测试
+
+**Files:**
+- Create: `tests/api.test.mjs`
+- Modify: `package.json`（新增 `test` 脚本）
+- Test: `npm test`（`npm run build && node --test tests/`）
 
 - [ ] 创建 `tests/api.test.mjs`，覆盖当前**已确认正常**的行为（锁死基线，防后续改动引入回归）：
 
@@ -226,6 +245,11 @@ test("DELETE 删除无密码保护的 key", async () => {
 
 ### Task 1.1：新增 constantTimeEqual
 
+**Files:**
+- Modify: `build-edge.cjs`（在 `sha256Hex` 之后、`checkPassword` 之前插入）
+- Regenerate: `edge-functions/[[default]].js`（经 `npm run build`）
+- Test: `npm test`（回归护栏：改动前后都必须全绿）
+
 - [ ] 在 `build-edge.cjs` 的 `sha256Hex`（第 85 行 `"}"`,）之后插入：
 
 ```js
@@ -260,6 +284,9 @@ test("DELETE 删除无密码保护的 key", async () => {
 > 这是本次风险最高的一项改动（涉及已存密码的校验）。**迁移必须向后兼容**：已存 `v:1` 记录继续可用，校验通过后透明升级为 `v:2`。
 
 ### Task 2.1：先写失败测试（TDD red）
+
+**Files:**
+- Create: `tests/password.test.mjs`
 
 - [ ] 创建 `tests/password.test.mjs`：
 
@@ -381,6 +408,12 @@ test("删除：无密码拒绝 / 正确密码通过", async () => {
 
 ### Task 2.2：实现 PBKDF2 与版本化校验
 
+**Files:**
+- Modify: `build-edge.cjs:93-99`（`checkPassword` → 版本感知 + 透明升级）
+- Modify: `build-edge.cjs:101-106`（`setPasswordMeta` → 写 v2）
+- Modify: `build-edge.cjs:112-119`（`verifyDeletePassword` → 版本感知）
+- Modify: `build-edge.cjs`（`sha256Hex` 之后插入 `PASSWORD_VERSION` / `PBKDF2_ITERATIONS` / `pbkdf2Hex` / `hashForVersion`）
+
 - [ ] 在 `build-edge.cjs` 的 `sha256Hex` 之后插入：
 
 ```js
@@ -485,6 +518,9 @@ curl -s -X DELETE "$B/$K" -H 'X-Password: pass1234'                 # 清理
 
 ### Task 3.1：先写失败测试
 
+**Files:**
+- Modify: `tests/password.test.mjs`（追加用例）
+
 - [ ] 在 `tests/password.test.mjs` 追加：
 
 ```js
@@ -515,6 +551,10 @@ test("密码来源：写路径与删路径均以 body 优先", async () => {
 
 ### Task 3.2：实现
 
+**Files:**
+- Modify: `build-edge.cjs:151`（删除路径的密码来源优先级）
+- Test: `npm test`（`密码来源：写路径与删路径均以 body 优先` 用例由红转绿）
+
 - [ ] 修改 `build-edge.cjs:151`：
 
 ```js
@@ -543,6 +583,9 @@ test("删除：仅用 X-Password 头仍可用（向后兼容）", async () => {
 
 ### Task 4.1：定位并包裹
 
+**Files:**
+- Modify: `src/App.tsx:37-40`
+
 - [ ] 确认现状（`src/App.tsx:37-40`，读取侧 `getInitialNav` 在 18-24 行**已有** try/catch，写入侧缺失）：
 
 ```tsx
@@ -568,6 +611,8 @@ useEffect(() => {
 
 ### Task 4.2：验证（无 DOM 测试环境，人工验证）
 
+> 项目无 DOM 测试环境，不引入 jsdom（避免为一个 3 行改动增加依赖）。
+
 - [ ] `npm run typecheck && npm run lint` 通过
 - [ ] `npm run dev` 启动，浏览器打开 DevTools → Application → Storage 勾选「Block third-party cookies / 禁用存储」后切换导航，确认**无未捕获异常**且页面功能正常
 - [ ] 提交：`git commit -m "fix(ui): 导航持久化写入 localStorage 加异常保护"`
@@ -577,6 +622,10 @@ useEffect(() => {
 ## Phase 5：`sync-to-github` 的 `--force` 决策（P2-4）⏳ 待决策
 
 ### Task 5.1：现状确认（本次已核实，与 REVIEW_TODO 的描述有重要补充）
+
+**Files:**
+- Read: `.cnb.yml:158-164`（自动同步链路）、`.cnb.yml:278-327`（手动同步链路）
+- Reference: `REVIEW_TODO.md` 第 4 项
 
 `.cnb.yml` 中存在**两条** GitHub 同步链路，行为不同：
 
@@ -615,6 +664,10 @@ useEffect(() => {
 ## Phase 6：首页 AI 爬虫死代码处置（P3-6）⏳ 待决策
 
 ### Task 6.1：结论复核
+
+**Files:**
+- Reference: `REVIEW_TODO.md` 第 6 项（响应头证据）
+- Read: `build-edge.cjs`（`isAiCrawler` / `AI_CRAWLERS` / `onRequest` 中 `path === '/'` 分支）
 
 - [ ] 确认死代码事实（响应头证据已记录在 `REVIEW_TODO.md` 第 6 项）：`/` 与 `/index.html` 由平台静态托管返回，函数中该分支从不执行
 

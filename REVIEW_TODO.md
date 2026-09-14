@@ -1,7 +1,9 @@
 # Dev 分支 Code Review 遗留 TODO
 
 > 来源：dev → master 合并前 Code Review（2026-09-03）
-> 状态：以下为评审中发现的**非阻断性**改进项，按优先级排期处理。**以下各项均仍未处理。**
+> 状态：以下为评审中发现的**非阻断性**改进项，按优先级排期处理。
+> **实施计划：** [docs/superpowers/plans/2026-09-15-review-todo-remediation.md](docs/superpowers/plans/2026-09-15-review-todo-remediation.md)
+> （Phase 0-4 可实施，Phase 5-6 需先做决策；下方各项的处理状态随计划执行同步更新）
 >
 > **实施计划（2026-09-15 制定）：** [`docs/superpowers/plans/2026-09-15-review-todo-remediation.md`](docs/superpowers/plans/2026-09-15-review-todo-remediation.md)
 > —— 含 6 个 Phase、逐任务可执行步骤、测试基线方案（Node 内置 test runner，零依赖）、
