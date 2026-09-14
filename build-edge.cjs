@@ -367,24 +367,20 @@ const edgeDir = path.join(__dirname, "edge-functions");
 if (!fs.existsSync(edgeDir)) fs.mkdirSync(edgeDir);
 fs.writeFileSync(path.join(edgeDir, "[[default]].js"), edgeCode);
 
-// 写入 .edgeone 部署目录（EdgeOne Pages 构建输出 API 规范）
-// 关键：edge function 文件名必须是 [[default]].js（catch-all），
-// 不能用 index.js（index.js 只匹配根路径 /，不匹配 /update/ /{key} /stats 等子路径）
-// 历史教训：1.3.0 切到 edgeone CLI 部署后，曾误用 index.js 导致所有非根路径 POST
-// 请求落到平台默认 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON，
-// 报错 "Unexpected token '<', \"<!doctype \"... is not valid JSON"
-const edgeoneDir = path.join(__dirname, ".edgeone");
-if (!fs.existsSync(edgeoneDir)) fs.mkdirSync(edgeoneDir, { recursive: true });
-const edgeoneEdgeDir = path.join(edgeoneDir, "edge-functions");
-if (!fs.existsSync(edgeoneEdgeDir)) fs.mkdirSync(edgeoneEdgeDir, { recursive: true });
-fs.writeFileSync(path.join(edgeoneEdgeDir, "[[default]].js"), edgeCode);
-
-// 生成 config.json（EdgeOne Pages 构建输出 API 元信息）
-// 主要声明 version。路由本身由 edge-functions/[[default]].js catch-all 处理
-// （该文件名约定匹配所有路径，包括 /update/ /{key} /stats 等）
-const configJson = JSON.stringify({
-  version: 3
-}, null, 2);
-fs.writeFileSync(path.join(edgeoneDir, "config.json"), configJson);
+// 说明（部署方案 A）：不再由本脚本生成 .edgeone 目录。
+// 流水线执行 `edgeone pages deploy`（不传目录路径）后由 CLI 自动构建：
+//   - 扫描仓库根 edge-functions/ → 打包为 .edgeone/edge-functions/[[default]].js（catch-all 路由）
+//   - 打包 dist/ 静态产物 → .edgeone/assets/，并生成 .edgeone/routes.json
+// 本脚本只负责产出「CLI 的输入」：dist/ 与仓库根 edge-functions/[[default]].js、
+// functions/[[default]].js、functions/api/[[default]].js。
+// 历史教训：
+//   1) 曾把函数产物写成 edge-functions/index.js —— index.js 只匹配根路径，
+//      /update/ /{key} /stats 落到平台 404/SPA fallback，前端收到 <!doctype HTML 而非 JSON；
+//      必须保持 [[default]].js 这个 catch-all 文件名。
+//   2) 曾 `edgeone pages deploy .edgeone` 显式传目录 —— CLI 以传入目录为上传根，
+//      其过滤器会跳过所有 `.<dir>/...` 形式的路径（FilePath.startsWith(".")），
+//      等于上传 0 个文件 → 平台侧 Deploy Failed。
+//   3) 曾 `edgeone pages deploy dist` 显式传目录 —— CLI 只做纯静态直传，
+//      不会读取仓库根 edge-functions/，导致线上 API 全部 404（后端丢失）。
 
 console.log("✅ build-edge.cjs fixed with safe join.");

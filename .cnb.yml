@@ -21,13 +21,19 @@
   docker:
     image: node:22
 
-# ===== EdgeOne Pages 部署：预发环境 =====
-# 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署
-# 关键：必须显式 npm run build 生成 .edgeone 构建产物，然后部署 .edgeone 目录
-# （.edgeone 内含 edge-functions/[[default]].js catch-all + config.json）
-# 历史教训：1.3.0 曾用 `edgeone pages deploy`（无路径）依赖 CLI 自动构建，
-# 但自动构建没有正确生成 edge-functions/[[default]].js catch-all，
-# 导致 POST /update/ 等路径返回 HTML 而非 JSON（edge function 未被路由到）
+# ===== EdgeOne Pages 部署：方案 A（不传目录，由 CLI 自动构建） =====
+# 本项目为 Edge Functions 项目，使用官方 edgeone CLI 部署。
+# `edgeone pages deploy` 不传目录路径时，CLI 会自行完成构建后再上传：
+#   1) 按 edgeone.json 执行 installCommand / buildCommand
+#   2) 扫描仓库根 edge-functions/[[default]].js → 打包为 .edgeone/edge-functions/（catch-all 路由）
+#   3) dist/ → .edgeone/assets/，生成 .edgeone/routes.json，再整体上传
+# 为什么必须「不传目录」（两次翻车记录）：
+#   - `deploy .edgeone`：CLI 以传入目录为上传根展开相对路径，其过滤器含
+#     `FilePath.startsWith(".") && FilePath !== basename(FilePath)` 条件，
+#     `.edgeone/xxx` 形式的路径全部命中被跳过 → 上传 0 个文件 → 平台 Deploy Failed
+#   - `deploy dist`：CLI 视为纯静态直传，不会读取仓库根 edge-functions/ →
+#     函数根本没上传 → 线上 /stats、/update/ 等 API 全部 404
+# 注意：edge-functions/[[default]].js 必须是 catch-all 文件名（index.js 只匹配根路径）
 .deploy-preview: &deploy-preview
   - name: validate-edgeone-token
     script: |
@@ -44,13 +50,13 @@
       npm install -g edgeone --legacy-peer-deps
   - name: build-and-deploy-preview
     script: |
-      # 显式构建生成 .edgeone 构建输出目录（含 edge-functions/[[default]].js catch-all）
+      # 预构建：确保仓库根 edge-functions/[[default]].js 是最新产物（CLI 扫描的就是它）
       npm install
       npm run build
-      # 部署构建产物目录 .edgeone（不再依赖 CLI 自动构建，避免再次构建时漏掉 edge function）
-      edgeone pages deploy .edgeone -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
+      # 关键：不传目录路径 —— 由 CLI 自动构建 .edgeone 后再上传（见上方「部署方案 A」）
+      edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"
 
-# ===== EdgeOne Pages 部署：生产环境 =====
+# ===== EdgeOne Pages 部署：生产环境（方案同预发，不传目录；不带 -e 即 production） =====
 .deploy-production: &deploy-production
   - name: validate-edgeone-token
     script: |
@@ -67,11 +73,11 @@
       npm install -g edgeone --legacy-peer-deps
   - name: build-and-deploy-production
     script: |
-      # 显式构建生成 .edgeone 构建输出目录（含 edge-functions/[[default]].js catch-all）
+      # 预构建：确保仓库根 edge-functions/[[default]].js 是最新产物（CLI 扫描的就是它）
       npm install
       npm run build
-      # 部署构建产物目录 .edgeone（不再依赖 CLI 自动构建，避免再次构建时漏掉 edge function）
-      edgeone pages deploy .edgeone -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
+      # 关键：不传目录路径（见上方「部署方案 A」）
+      edgeone pages deploy -n textdb-edgeone -t "$EDGEONE_PAGES_API_TOKEN"
 
 # ===== GitHub 同步公共 stages（自动版：当前分支 + tags） =====
 .sync-github: &sync-github
