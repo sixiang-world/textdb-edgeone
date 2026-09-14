@@ -181,8 +181,9 @@ test("不存在的 key：200 且空 body（非 404）", async () => {
 
 test("超大 value 返回 413", async () => {
   const kv = makeKV();
-  const r = await call(kv, "/update/", jsonInit({ key: "big", value: "x".repeat(5 * 1024 * 1024 + 1) }));
-  assert.equal(r.status, 413);
+  const big = "x".repeat(5 * 1024 * 1024 + 1);
+  const r = await call(kv, "/update/", jsonInit({ key: "big", value: big }));
+  assert.equal(r.status, 413, "超过 5 MiB 应返回 413");
 });
 
 test("OPTIONS 返回 204 且带 CORS 头", async () => {
@@ -240,6 +241,8 @@ test("DELETE 删除无密码保护的 key", async () => {
 - [ ] 加 `package.json` 脚本：`"test": "npm run build && node --test \"tests/**/*.test.mjs\""`
 - [ ] 运行 `npm test` → **预期 12 项全通过**（这些都是当前已正确的行为）
 - [x] 已完成：12/12 通过，退出码 0
+
+> 规格评审修正（2026-09-15）：上方「超大 value 返回 413」用例已按实际实现更新为「抽取 `big` 中间变量 + 自定义断言消息」的形式。原规格为单行内联表达式且无断言消息；改动理由是可读性与失败时的可诊断性（该断言涉及 5 MiB 数据，写明期望值便于排查）。语义等价，不影响覆盖率。
 
 > 已知限制（实测确认，暂不处理）：`eslint.config.js` 只匹配 `**/*.{ts,tsx}`，`npm run lint` **不覆盖** `tests/*.mjs`；`npm run format` 的 glob 同样只含 `{ts,tsx}`。若将来需要，可扩展 eslint `files` 与 format glob，但会引入对 `.mjs` 的规则集选择问题，本计划范围外。
 
