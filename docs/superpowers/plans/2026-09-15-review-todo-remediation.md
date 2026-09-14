@@ -74,6 +74,18 @@ import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/**
+ * 测试基础设施：内存 KV + 边缘函数调用封装。
+ *
+ * ⚠️ 并发约束（勿删）：边缘函数在 `onRequest` 入口把 `context.env.TEXTDB` 写入
+ * `globalThis.TEXTDB`（进程内共享的模块级状态），因此 **同一测试文件内的用例必须串行执行**
+ * ——这也是 Node 测试运行器的默认行为。不要给 `test()` / `describe()` 开启 `concurrency`，
+ * 否则并发请求会互相覆盖 KV 绑定，产生偶发串扰。
+ * （不同测试文件由 `node --test` 以独立子进程运行，互不影响，无需担心跨文件干扰。）
+ *
+ * ⚠️ 隔离约定：每个用例必须各自调用 `makeKV()` 创建独立实例，不要共享。
+ */
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const FN_PATH = resolve(ROOT, "edge-functions/[[default]].js");
 
@@ -81,7 +93,8 @@ const FN_PATH = resolve(ROOT, "edge-functions/[[default]].js");
 export function makeKV(seed = {}) {
   const store = new Map(Object.entries(seed));
   return {
-    _store: store,
+    /** 测试专用出口：直接检视底层存储（断言写入/删除是否落库） */
+    store,
     async get(k) {
       return store.has(k) ? store.get(k) : null;
     },
@@ -167,7 +180,7 @@ test("写入后读取：往返一致", async () => {
 test("KV 前缀：写入落在 tdb_ 命名空间", async () => {
   const kv = makeKV();
   await call(kv, "/update/", jsonInit({ key: "t2", value: "v" }));
-  assert.ok(kv._store.has("tdb_t2"), "应写入 tdb_t2");
+  assert.ok(kv.store.has("tdb_t2"), "应写入 tdb_t2");
 });
 
 test("非法 key 返回 400", async () => {
@@ -202,7 +215,7 @@ test("空 value 触发删除", async () => {
   const r = await call(kv, "/update/", jsonInit({ key: "del", value: "" }));
   assert.equal(r.status, 200);
   assert.equal((await readJSON(r)).data.action, "deleted");
-  assert.ok(!kv._store.has("tdb_del"), "KV 中应已删除");
+  assert.ok(!kv.store.has("tdb_del"), "KV 中应已删除");
 });
 
 test("/stats 汇总键数与体积", async () => {
@@ -238,7 +251,7 @@ test("DELETE 删除无密码保护的 key", async () => {
   const kv = makeKV({ tdb_d: "v" });
   const r = await call(kv, "/d", { method: "DELETE" });
   assert.equal(r.status, 200);
-  assert.ok(!kv._store.has("tdb_d"));
+  assert.ok(!kv.store.has("tdb_d"));
 });
 ```
 
@@ -325,7 +338,7 @@ const PWD_KEY = (k) => `tdb_${k}.pwd`;
 test("设密码后元数据为 v2 且含迭代次数", async () => {
   const kv = makeKV();
   await call(kv, "/update/", jsonInit({ key: "p", value: "v1", password: "pass1234" }));
-  const meta = JSON.parse(kv._store.get(PWD_KEY("p")));
+  const meta = JSON.parse(kv.store.get(PWD_KEY("p")));
   assert.equal(meta.v, 2, "新密码应为 v2 格式");
   assert.equal(meta.i, 100000, "应记录迭代次数，便于后续提升");
   assert.ok(meta.s, "应有盐");
@@ -379,7 +392,7 @@ test("v1 记录校验通过后透明升级为 v2", async () => {
     [PWD_KEY("old2")]: JSON.stringify({ h, s: salt, v: 1 }),
   });
   await call(kv, "/update/", jsonInit({ key: "old2", value: "new", password: "legacy123" }));
-  const meta = JSON.parse(kv._store.get(PWD_KEY("old2")));
+  const meta = JSON.parse(kv.store.get(PWD_KEY("old2")));
   assert.equal(meta.v, 2, "通过校验后应升级到 v2");
   assert.equal(meta.i, 100000);
   assert.ok(meta.u, "应记录升级时间戳");
@@ -401,7 +414,7 @@ test("v1 记录：错误密码不得触发升级（防降级/防污染）", asyn
   const kv = makeKV({ tdb_old3: "v", [PWD_KEY("old3")]: original });
   const r = await call(kv, "/update/", jsonInit({ key: "old3", value: "x", password: "WRONG" }));
   assert.equal(r.status, 400);
-  assert.equal(kv._store.get(PWD_KEY("old3")), original, "元数据不应被改动");
+  assert.equal(kv.store.get(PWD_KEY("old3")), original, "元数据不应被改动");
 });
 
 test("改密码：旧密码校验 + 新密码生效", async () => {

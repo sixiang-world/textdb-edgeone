@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc -b --noEmit",
-    "pretest": "node -e \"const fs=require('node:fs');const f=fs.readdirSync('tests').filter(x=>x.endsWith('.test.mjs'));if(!f.length){console.error('✘ 未找到任何测试文件（tests/**/*.test.mjs）——测试配置可能已损坏，拒绝以 0 用例通过');process.exit(1)}\"",
+    "pretest": "node -e \"const fs=require('node:fs');const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(d+'/'+e.name):(e.name.endsWith('.test.mjs')?[e.name]:[]));if(!walk('tests').length){console.error('✘ 未找到任何测试文件（tests/**/*.test.mjs）——测试配置可能已损坏，拒绝以 0 用例通过');process.exit(1)}\"",
     "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
     "preview": "vite preview"
   },

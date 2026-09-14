@@ -168,7 +168,7 @@ Edge Functions 不能使用 npm 包与 Node.js 内置模块（fs/path/crypto）�
 
 - `AGENTS.md` 是唯一真源；`CLAUDE.md` 是它的软链接
 - push 会触发部署（dev → preview，master → production）——**push 前列出改动清单**，且线上域名绑的是 dev 的部署
-- 无测试框架，push 前跑 lint + typecheck
+- push 前跑 `npm test` + `npm run lint` + `npm run typecheck`（三者都必须通过，见上方「测试架构」）
 - `dist/`、`.edgeone/`、`.Trash-0/` 已 gitignore；`functions/` 与 `edge-functions/` **已跟踪**（EdgeOne 需要它们在仓库里），由 `npm run build` 重新生成
 - 提交构建产物时体积应约 20 KB；若发现 `edge-functions/[[default]].js` 变成 MB 级，说明误把整个 dist 内联了
 
