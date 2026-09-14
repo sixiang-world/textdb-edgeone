@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+修复线上环境「页面能打开但所有 API 返回 404」的连锁故障，涉及部署方式、函数体积、构建可复现性三个层面。
+
+### Fixed
+
+- **边缘函数未生效导致线上 API 全部 404**：`build-edge.cjs` 曾把整个 `dist/` 内联进函数源码，v1.3.0 引入 mermaid / katex / swagger 后 `dist/` 达 7.1 MB，函数产物膨胀至 **9.5 MB**，超出 EdgeOne 单函数 **5 MB** 上限。症状极具迷惑性——CI 显示 `Compiled edge functions successfully` 且 `Deploy Success`，但函数实际未生效。现只内联 `dist/index.html`，函数产物降至约 **20 KB**
+- **部署命令传参错误导致函数未上传**：`edgeone pages deploy .edgeone` 会被 CLI 的上传过滤器跳过所有 `.<dir>/...` 路径（上传 0 个文件 → 平台 `Deploy Failed`）；改为 `deploy dist` 则是纯静态直传，CLI 不会读取仓库根 `edge-functions/`，函数根本没上传。现改为**不传目录参数**，由 CLI 自动构建 `.edgeone/` 后整体上传
+- **构建不可复现（产物哈希漂移）**：Tailwind CSS v4 会扫描项目内未被忽略的文件，而 `functions/`、`edge-functions/` 是内含 `index.html` 的构建产物，形成「产物影响 CSS → CSS 改变产物哈希」的自我循环，导致同一份源码每次构建产出不同哈希。部署后旧哈希资源被删除，浏览器缓存的页面随即白屏。已在 `src/index.css` 用 `@source not` 排除产物目录
+- `edgeone.json` 移除 `outputDirectory` 字段（StaticAssetsBuilder 自拷贝报错来源）
+
+### Changed
+
+- `build-edge.cjs` 不再生成 `.edgeone/` 目录，改由 edgeone CLI 在部署时生成（`dist/` → `.edgeone/assets/`，边缘函数 → `.edgeone/edge-functions/`）
+- `.gitignore` 新增忽略 `.Trash-0/`（删除操作产生的回收站残留含旧 `dist` 副本，会污染 Tailwind 扫描）
+
 ## [1.3.0] - 2026-09-04
 
 ### Added
@@ -35,7 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - package.json 版本号 1.2.0 → 1.3.0
 
-## [1.2.0] - 2026-08-??
+## [1.2.0] - 2026-07-13
 
 ### Added
 

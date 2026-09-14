@@ -119,7 +119,11 @@ TextDB EdgeOne 是一个匿名 Key-Value 文本数据库，无用户系统，所
 
 计划在以下文件中实现密码功能：
 
-1. **`functions/api/[[default]].js`** — 核心：密码校验逻辑、哈希工具、API 路由变更
+1. **`build-edge.cjs`** — 核心：密码校验逻辑、哈希工具、API 路由变更
+   <br>（注 2026-09-14：密码逻辑写在 `build-edge.cjs` 里，构建时生成 `functions/[[default]].js`、
+   `functions/api/[[default]].js`、`edge-functions/[[default]].js` 三个内容相同的产物。
+   部署时 CLI **实际只读取 `edge-functions/[[default]].js`**，`functions/` 系列是 legacy 回退路径，
+   因此排查线上密码问题时看 `edge-functions/[[default]].js`。）
 2. **`src/api.ts`** — 前端 API 层：`writeData` 和 `deleteData` 新增密码参数
 3. **`src/components/WriteCard.tsx`** — 前端 UI：密码输入框、更新/删除时提交密码
 4. **`docs/superpowers/specs/`** — 本设计文档

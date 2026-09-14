@@ -155,7 +155,13 @@ Expected: 需要密码，返回错误
 git push origin dev
 ```
 
-等待部署完成后（或手动触发 CI/CD），用以下命令验证线上环境：
+> 注（2026-09-14 更新）：部署已改为 **CNB 流水线 + edgeone CLI**。push 到 CNB 的 `dev` 分支会
+> 自动执行 `edgeone pages deploy -n textdb-edgeone -e preview -t "$EDGEONE_PAGES_API_TOKEN"`
+> 部署到 preview 环境；`master` 分支对应 production。GitHub 仅作镜像同步
+> （CNB 会把分支/tag 强推到 GitHub），push 到 GitHub 不会触发部署。
+> 线上域名 `text.hunluan.space` 绑定的正是 dev 分支的部署。
+
+等待 CNB 流水线部署完成后，用以下命令验证线上环境：
 
 ```bash
 # 线上根路径 — 普通 UA

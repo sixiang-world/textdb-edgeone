@@ -1,7 +1,12 @@
 # Dev 分支 Code Review 遗留 TODO
 
 > 来源：dev → master 合并前 Code Review（2026-09-03）
-> 状态：dev 已合并到 master，以下为评审中发现的**非阻断性**改进项，按优先级排期处理。
+> 状态：以下为评审中发现的**非阻断性**改进项，按优先级排期处理。**以下各项均仍未处理。**
+>
+> 分支现状（2026-09-14 更新）：当时误把 dev 内容合并进 master（合并请求 #4），已回退——
+> master 现位于 `8d3f696`，误合并的那份备份在分支 `backup-master-5b3cdd9`。
+> dev 目前领先 master 若干部署相关修复（见 CHANGELOG.md 的 Unreleased），
+> 需要发生产时正常合一次 PR 到 master 即可，**不要强推**。
 
 ## 优先级说明
 
