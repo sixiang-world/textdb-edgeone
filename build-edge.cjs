@@ -6,19 +6,19 @@ const distDir = path.join(__dirname, "dist");
 const functionsDir = path.join(__dirname, "functions");
 if (!fs.existsSync(functionsDir)) fs.mkdirSync(functionsDir);
 
+// 只内联 index.html —— 其余静态资源交给 EdgeOne 平台托管（.edgeone/assets/）
+// 原因（v1.3.0 生产故障根因）：
+//   1) 函数内联整个 dist 会让边缘函数代码包膨胀。v1.3.0 引入 mermaid/katex/swagger 后
+//      dist 达 7.1 MB，内联后函数产物 9.5 MB，远超平台单函数 5 MB 上限。
+//   2) CLI 生成的 .edgeone/routes.json 中，静态资源由 `{ "handle": "filesystem" }`
+//      优先匹配，函数只兜底动态路径（/stats、/update/、/{key}、/p/、/file/ 等）。
+//      因此 assets/ 下的字体、mermaid chunk、swagger 等无需进函数。
+// 函数仅在两处需要 index.html：`/`（根路径）与 `/md/{key}`（返回 SPA 外壳供前端解析）。
 const staticFiles = {};
-function walkDir(dir) {
-  if (!fs.existsSync(dir)) return;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    const rel = "/" + path.relative(distDir, full);
-    if (entry.isDirectory()) walkDir(full);
-    else if (!entry.name.endsWith(".map")) {
-      staticFiles[rel] = fs.readFileSync(full, "utf-8");
-    }
-  }
+const indexPath = path.join(distDir, "index.html");
+if (fs.existsSync(indexPath)) {
+  staticFiles["/index.html"] = fs.readFileSync(indexPath, "utf-8");
 }
-walkDir(distDir);
 
 const staticMapJSON = JSON.stringify(staticFiles);
 
